@@ -3,54 +3,46 @@ import db from '../db.js';
 
 const router = Router();
 
+const ENTRIES_WITH_DIMENSION = `
+  SELECT entries.*, dimensions.name AS dimension_name
+  FROM entries
+  JOIN dimensions ON dimensions.id = entries.dimension_id
+`;
+
 router.get('/', (req, res) => {
   const { since } = req.query;
   const entries = since
     ? db
-        .prepare(
-          `SELECT entries.*, goals.title AS goal_title, goals.dimension AS goal_dimension
-           FROM entries JOIN goals ON goals.id = entries.goal_id
-           WHERE entries.date >= ? ORDER BY entries.date DESC`
-        )
+        .prepare(`${ENTRIES_WITH_DIMENSION} WHERE entries.date >= ? ORDER BY entries.date DESC`)
         .all(since)
-    : db
-        .prepare(
-          `SELECT entries.*, goals.title AS goal_title, goals.dimension AS goal_dimension
-           FROM entries JOIN goals ON goals.id = entries.goal_id
-           ORDER BY entries.date DESC`
-        )
-        .all();
+    : db.prepare(`${ENTRIES_WITH_DIMENSION} ORDER BY entries.date DESC`).all();
   res.json(entries);
 });
 
 router.post('/', (req, res) => {
-  const { goal_id, date, score, note = '' } = req.body;
-  if (!goal_id || !date || score === undefined || score === null) {
-    return res.status(400).json({ error: 'goal_id, date and score are required' });
+  const { dimension_id, date, score, note = '' } = req.body;
+  if (!dimension_id || !date || score === undefined || score === null) {
+    return res.status(400).json({ error: 'dimension_id, date and score are required' });
   }
   if (score < 0 || score > 4) {
     return res.status(400).json({ error: 'score must be between 0 and 4' });
   }
 
-  const goal = db.prepare('SELECT id FROM goals WHERE id = ?').get(goal_id);
-  if (!goal) return res.status(404).json({ error: 'goal not found' });
+  const dimension = db.prepare('SELECT id FROM dimensions WHERE id = ?').get(dimension_id);
+  if (!dimension) return res.status(404).json({ error: 'dimension not found' });
 
   db.prepare(
-    `INSERT INTO entries (goal_id, date, score, note)
-     VALUES (@goal_id, @date, @score, @note)
-     ON CONFLICT(goal_id, date) DO UPDATE SET
+    `INSERT INTO entries (dimension_id, date, score, note)
+     VALUES (@dimension_id, @date, @score, @note)
+     ON CONFLICT(dimension_id, date) DO UPDATE SET
        score = excluded.score,
        note = excluded.note,
        updated_at = datetime('now')`
-  ).run({ goal_id, date, score, note: note.trim() });
+  ).run({ dimension_id, date, score, note: note.trim() });
 
   const entry = db
-    .prepare(
-      `SELECT entries.*, goals.title AS goal_title, goals.dimension AS goal_dimension
-       FROM entries JOIN goals ON goals.id = entries.goal_id
-       WHERE entries.goal_id = ? AND entries.date = ?`
-    )
-    .get(goal_id, date);
+    .prepare(`${ENTRIES_WITH_DIMENSION} WHERE entries.dimension_id = ? AND entries.date = ?`)
+    .get(dimension_id, date);
 
   res.status(201).json(entry);
 });

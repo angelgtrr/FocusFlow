@@ -1,8 +1,9 @@
 interface StatsBarProps {
-  activeGoals: number;
+  dimensionCount: number;
   weeklyProgressPct: number;
   streak: number;
-  loggedToday: number;
+  tasksDoneToday: { done: number; total: number };
+  tasksDoneLabel?: string;
 }
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -16,21 +17,26 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
 }
 
 export default function StatsBar({
-  activeGoals,
+  dimensionCount,
   weeklyProgressPct,
   streak,
-  loggedToday,
+  tasksDoneToday,
+  tasksDoneLabel = 'Tasks Done Today',
 }: StatsBarProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <StatCard label="Active Goals" value={String(activeGoals)} />
+      <StatCard label="Dimensions" value={String(dimensionCount)} />
       <StatCard label="This Week" value={`${weeklyProgressPct}%`} sub="of max possible progress" />
       <StatCard
         label="Current Streak"
         value={`${streak} ${streak === 1 ? 'day' : 'days'}`}
         sub={streak > 0 ? 'keep it going' : 'log today to start one'}
       />
-      <StatCard label="Logged Today" value={`${loggedToday}/${activeGoals}`} sub="goals checked in" />
+      <StatCard
+        label={tasksDoneLabel}
+        value={`${tasksDoneToday.done}/${tasksDoneToday.total}`}
+        sub="active tasks completed"
+      />
     </div>
   );
 }

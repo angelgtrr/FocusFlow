@@ -1,30 +1,32 @@
 import { useState } from 'react';
+import type { Dimension } from '../types';
 
-interface GoalFormProps {
-  existingDimensions: string[];
-  onSubmit: (data: { title: string; description: string; dimension: string }) => Promise<void>;
+interface TaskFormProps {
+  dimensions: Dimension[];
+  initialDimensionId?: number | null;
+  onSubmit: (data: { title: string; description: string; dimension_id: number | null }) => Promise<void>;
 }
 
-export default function GoalForm({ existingDimensions, onSubmit }: GoalFormProps) {
+export default function TaskForm({ dimensions, initialDimensionId, onSubmit }: TaskFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dimension, setDimension] = useState('');
+  const [dimensionId, setDimensionId] = useState<number | null>(initialDimensionId ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !dimension.trim()) {
-      setError('Title and dimension are required.');
+    if (!title.trim()) {
+      setError('Title is required.');
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      await onSubmit({ title: title.trim(), description: description.trim(), dimension: dimension.trim() });
+      await onSubmit({ title: title.trim(), description: description.trim(), dimension_id: dimensionId });
       setTitle('');
       setDescription('');
-      setDimension('');
+      setDimensionId(initialDimensionId ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
@@ -38,7 +40,7 @@ export default function GoalForm({ existingDimensions, onSubmit }: GoalFormProps
       className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
     >
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-        New goal
+        New task
       </h2>
 
       <div>
@@ -53,18 +55,18 @@ export default function GoalForm({ existingDimensions, onSubmit }: GoalFormProps
 
       <div>
         <label className="block text-xs uppercase tracking-wide text-slate-500">Dimension</label>
-        <input
-          value={dimension}
-          onChange={(e) => setDimension(e.target.value)}
-          placeholder="e.g. Exercise, Work, Learning"
-          list="dimension-suggestions"
-          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600"
-        />
-        <datalist id="dimension-suggestions">
-          {existingDimensions.map((d) => (
-            <option key={d} value={d} />
+        <select
+          value={dimensionId ?? ''}
+          onChange={(e) => setDimensionId(e.target.value === '' ? null : Number(e.target.value))}
+          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+        >
+          <option value="">No dimension</option>
+          {dimensions.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
           ))}
-        </datalist>
+        </select>
       </div>
 
       <div>
@@ -75,7 +77,7 @@ export default function GoalForm({ existingDimensions, onSubmit }: GoalFormProps
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          placeholder="Brief description of the goal"
+          placeholder="Brief description of the task"
           className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600"
         />
       </div>
@@ -87,7 +89,7 @@ export default function GoalForm({ existingDimensions, onSubmit }: GoalFormProps
         disabled={submitting}
         className="w-full rounded-lg bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
       >
-        {submitting ? 'Adding...' : 'Add goal'}
+        {submitting ? 'Adding...' : 'Add task'}
       </button>
     </form>
   );

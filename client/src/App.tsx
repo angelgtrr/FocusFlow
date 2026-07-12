@@ -1,27 +1,37 @@
 import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import DailyPage from './pages/DailyPage';
-import AdminGoalsPage from './pages/AdminGoalsPage';
+import DimensionsPage from './pages/DimensionsPage';
+import TasksPage from './pages/TasksPage';
 import LoginPage from './pages/LoginPage';
 import { api, UnauthorizedError } from './api';
-import type { Entry, Goal, GoalStatus } from './types';
+import type { DayNote, Dimension, Entry, Task, TaskCompletion, TaskStatus } from './types';
 
 export default function App() {
-  const [tab, setTab] = useState<'daily' | 'admin'>('daily');
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const [tab, setTab] = useState<'daily' | 'dimensions' | 'tasks'>('daily');
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [dimensions, setDimensions] = useState<Dimension[]>([]);
+  const [taskCompletions, setTaskCompletions] = useState<TaskCompletion[]>([]);
+  const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authed, setAuthed] = useState(false);
 
   async function refresh() {
     try {
-      const [goalsData, entriesData] = await Promise.all([
-        api.getGoals(),
+      const [tasksData, entriesData, dimensionsData, taskCompletionsData, dayNotesData] = await Promise.all([
+        api.getTasks(),
         api.getEntries(),
+        api.getDimensions(),
+        api.getTaskCompletions(),
+        api.getDayNotes(),
       ]);
-      setGoals(goalsData);
+      setTasks(tasksData);
       setEntries(entriesData);
+      setDimensions(dimensionsData);
+      setTaskCompletions(taskCompletionsData);
+      setDayNotes(dayNotesData);
     } catch (e) {
       if (e instanceof UnauthorizedError) {
         setAuthed(false);
@@ -57,26 +67,59 @@ export default function App() {
   async function handleLogout() {
     await api.logout();
     setAuthed(false);
-    setGoals([]);
+    setTasks([]);
     setEntries([]);
+    setDimensions([]);
+    setTaskCompletions([]);
+    setDayNotes([]);
   }
 
-  async function handleLogEntry(data: { goal_id: number; score: number; note: string }) {
-    const today = new Date();
-    const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-      today.getDate()
-    ).padStart(2, '0')}`;
-    await api.logEntry({ ...data, date });
+  async function handleLogEntry(data: { dimension_id: number; date: string; score: number; note: string }) {
+    await api.logEntry(data);
     await refresh();
   }
 
-  async function handleCreateGoal(data: { title: string; description: string; dimension: string }) {
-    await api.createGoal(data);
+  async function handleToggleTaskCompletion(taskId: number, date: string, completed: boolean) {
+    if (completed) {
+      await api.completeTask(taskId, date);
+    } else {
+      await api.uncompleteTask(taskId, date);
+    }
     await refresh();
   }
 
-  async function handleStatusChange(id: number, status: GoalStatus) {
-    await api.updateGoal(id, { status });
+  async function handleSaveDayNote(date: string, note: string) {
+    await api.saveDayNote(date, note);
+    await refresh();
+  }
+
+  async function handleCreateTask(data: { title: string; description: string; dimension_id: number | null }) {
+    await api.createTask(data);
+    await refresh();
+  }
+
+  async function handleStatusChange(id: number, status: TaskStatus) {
+    await api.updateTask(id, { status });
+    await refresh();
+  }
+
+  async function handleDeleteTask(id: number) {
+    await api.deleteTask(id);
+    await refresh();
+  }
+
+  async function handleCreateDimension(name: string) {
+    await api.createDimension(name);
+    await refresh();
+  }
+
+  async function handleRenameDimension(id: number, name: string) {
+    await api.updateDimension(id, name);
+    await refresh();
+  }
+
+  async function handleDeleteDimension(id: number) {
+    await api.deleteDimension(id);
     await refresh();
   }
 
@@ -103,13 +146,34 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950">
       <Header tab={tab} onTabChange={setTab} onLogout={handleLogout} />
-      {tab === 'daily' ? (
-        <DailyPage goals={goals} entries={entries} onLogEntry={handleLogEntry} />
-      ) : (
-        <AdminGoalsPage
-          goals={goals}
-          onCreateGoal={handleCreateGoal}
+      {tab === 'daily' && (
+        <DailyPage
+          tasks={tasks}
+          entries={entries}
+          dimensions={dimensions}
+          taskCompletions={taskCompletions}
+          dayNotes={dayNotes}
+          onLogEntry={handleLogEntry}
+          onToggleTaskCompletion={handleToggleTaskCompletion}
+          onSaveDayNote={handleSaveDayNote}
+        />
+      )}
+      {tab === 'dimensions' && (
+        <DimensionsPage
+          dimensions={dimensions}
+          tasks={tasks}
+          onCreate={handleCreateDimension}
+          onRename={handleRenameDimension}
+          onDelete={handleDeleteDimension}
+        />
+      )}
+      {tab === 'tasks' && (
+        <TasksPage
+          tasks={tasks}
+          dimensions={dimensions}
+          onCreateTask={handleCreateTask}
           onStatusChange={handleStatusChange}
+          onDeleteTask={handleDeleteTask}
         />
       )}
     </div>

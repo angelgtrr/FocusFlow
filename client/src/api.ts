@@ -1,4 +1,4 @@
-import type { Entry, Goal, GoalStatus } from './types';
+import type { DayNote, Dimension, Entry, Task, TaskCompletion, TaskStatus } from './types';
 
 export class UnauthorizedError extends Error {}
 
@@ -17,25 +17,52 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getGoals: () => request<Goal[]>('/goals'),
+  getTasks: () => request<Task[]>('/tasks'),
 
-  createGoal: (data: { title: string; description: string; dimension: string }) =>
-    request<Goal>('/goals', { method: 'POST', body: JSON.stringify(data) }),
+  createTask: (data: { title: string; description: string; dimension_id: number | null }) =>
+    request<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
 
-  updateGoal: (
+  updateTask: (
     id: number,
-    data: Partial<{ title: string; description: string; dimension: string; status: GoalStatus }>
-  ) => request<Goal>(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    data: Partial<{ title: string; description: string; dimension_id: number | null; status: TaskStatus }>
+  ) => request<Task>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  deleteGoal: (id: number) => request<void>(`/goals/${id}`, { method: 'DELETE' }),
+  deleteTask: (id: number) => request<void>(`/tasks/${id}`, { method: 'DELETE' }),
+
+  getDimensions: () => request<Dimension[]>('/dimensions'),
+
+  createDimension: (name: string) =>
+    request<Dimension>('/dimensions', { method: 'POST', body: JSON.stringify({ name }) }),
+
+  updateDimension: (id: number, name: string) =>
+    request<Dimension>(`/dimensions/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) }),
+
+  deleteDimension: (id: number) => request<void>(`/dimensions/${id}`, { method: 'DELETE' }),
 
   getEntries: (since?: string) =>
     request<Entry[]>(`/entries${since ? `?since=${since}` : ''}`),
 
-  logEntry: (data: { goal_id: number; date: string; score: number; note: string }) =>
+  logEntry: (data: { dimension_id: number; date: string; score: number; note: string }) =>
     request<Entry>('/entries', { method: 'POST', body: JSON.stringify(data) }),
 
   deleteEntry: (id: number) => request<void>(`/entries/${id}`, { method: 'DELETE' }),
+
+  getTaskCompletions: (date?: string) =>
+    request<TaskCompletion[]>(`/task-completions${date ? `?date=${date}` : ''}`),
+
+  completeTask: (task_id: number, date: string) =>
+    request<TaskCompletion>('/task-completions', {
+      method: 'POST',
+      body: JSON.stringify({ task_id, date }),
+    }),
+
+  uncompleteTask: (task_id: number, date: string) =>
+    request<void>(`/task-completions?task_id=${task_id}&date=${date}`, { method: 'DELETE' }),
+
+  getDayNotes: () => request<DayNote[]>('/day-notes'),
+
+  saveDayNote: (date: string, note: string) =>
+    request<DayNote>('/day-notes', { method: 'POST', body: JSON.stringify({ date, note }) }),
 
   login: (password: string) =>
     request<{ ok: boolean }>('/login', { method: 'POST', body: JSON.stringify({ password }) }),

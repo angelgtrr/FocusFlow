@@ -2,8 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import goalsRouter from './routes/goals.js';
+import tasksRouter from './routes/tasks.js';
 import entriesRouter from './routes/entries.js';
+import dimensionsRouter from './routes/dimensions.js';
+import taskCompletionsRouter from './routes/task-completions.js';
+import dayNotesRouter from './routes/day-notes.js';
 import { login, logout, session, requireAuth } from './middleware/auth.js';
 
 const app = express();
@@ -18,8 +21,11 @@ app.post('/api/logout', logout);
 app.get('/api/session', session);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-app.use('/api/goals', requireAuth, goalsRouter);
+app.use('/api/tasks', requireAuth, tasksRouter);
 app.use('/api/entries', requireAuth, entriesRouter);
+app.use('/api/dimensions', requireAuth, dimensionsRouter);
+app.use('/api/task-completions', requireAuth, taskCompletionsRouter);
+app.use('/api/day-notes', requireAuth, dayNotesRouter);
 
 app.listen(PORT, () => {
   console.log(`FocusFlow API listening on http://localhost:${PORT}`);

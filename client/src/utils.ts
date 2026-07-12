@@ -1,4 +1,4 @@
-import type { Entry, Goal } from './types';
+import type { DayNote, Dimension, Entry, Task, TaskCompletion } from './types';
 
 export function toDateKey(date: Date): string {
   const y = date.getFullYear();
@@ -11,12 +11,80 @@ export function todayKey(): string {
   return toDateKey(new Date());
 }
 
+export function keyToDate(key: string): Date {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function addDays(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+export function addMonths(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + n);
+  return d;
+}
+
 export function startOfWeek(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay(); // 0 = Sunday
   d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+export interface MonthGridDay {
+  key: string;
+  date: Date;
+  inMonth: boolean;
+}
+
+export function buildMonthGrid(monthDate: Date): MonthGridDay[] {
+  const firstOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  const lastOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+  const start = startOfWeek(firstOfMonth);
+  const end = startOfWeek(lastOfMonth);
+  end.setDate(end.getDate() + 6);
+
+  const days: MonthGridDay[] = [];
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    days.push({
+      key: toDateKey(cursor),
+      date: new Date(cursor),
+      inMonth: cursor.getMonth() === monthDate.getMonth(),
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+}
+
+export function activeDateKeys(
+  entries: Entry[],
+  taskCompletions: TaskCompletion[],
+  dayNotes: DayNote[]
+): Set<string> {
+  const keys = new Set<string>();
+  for (const e of entries) keys.add(e.date);
+  for (const c of taskCompletions) keys.add(c.date);
+  for (const n of dayNotes) {
+    if (n.note.trim()) keys.add(n.date);
+  }
+  return keys;
+}
+
+export function formatDayHeading(dateKey: string): string {
+  const date = keyToDate(dateKey);
+  const includeYear = date.getFullYear() !== new Date().getFullYear();
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    ...(includeYear ? { year: 'numeric' } : {}),
+  });
 }
 
 export function entriesInCurrentWeek(entries: Entry[]): Entry[] {
@@ -26,11 +94,11 @@ export function entriesInCurrentWeek(entries: Entry[]): Entry[] {
   return entries.filter((e) => e.date >= startKey && e.date <= endKey);
 }
 
-export function weeklyProgressPct(entries: Entry[], activeGoals: Goal[]): number {
+export function weeklyProgressPct(entries: Entry[], dimensions: Dimension[]): number {
   const weekEntries = entriesInCurrentWeek(entries);
-  if (activeGoals.length === 0) return 0;
+  if (dimensions.length === 0) return 0;
   const daysSoFar = new Date().getDay() + 1; // Sun=0 -> 1 day so far
-  const possible = activeGoals.length * daysSoFar * 4; // max score 4 per goal per day
+  const possible = dimensions.length * daysSoFar * 4; // max score 4 per dimension per day
   if (possible === 0) return 0;
   const achieved = weekEntries.reduce((sum, e) => sum + e.score, 0);
   return Math.round((achieved / possible) * 100);
@@ -119,6 +187,35 @@ export function buildTrend(entries: Entry[], days = 30): TrendPoint[] {
   return points;
 }
 
-export function dimensionsFromGoals(goals: Goal[]): string[] {
-  return Array.from(new Set(goals.map((g) => g.dimension))).sort();
+export function tasksByDimensionId(tasks: Task[]): Map<number | null, Task[]> {
+  const grouped = new Map<number | null, Task[]>();
+  for (const task of tasks) {
+    const key = task.dimension_id;
+    const list = grouped.get(key) ?? [];
+    list.push(task);
+    grouped.set(key, list);
+  }
+  return grouped;
+}
+
+export interface DimensionProgress {
+  dimension: Dimension;
+  entry: Entry | null;
+  loggedToday: boolean;
+}
+
+export function buildDimensionProgress(
+  dimensions: Dimension[],
+  todaysEntries: Entry[]
+): DimensionProgress[] {
+  const byDim = new Map(todaysEntries.map((e) => [e.dimension_id, e]));
+
+  return dimensions.map((dimension) => {
+    const entry = byDim.get(dimension.id) ?? null;
+    return { dimension, entry, loggedToday: entry !== null };
+  });
+}
+
+export function completedTaskIdsForDate(completions: TaskCompletion[], date: string): Set<number> {
+  return new Set(completions.filter((c) => c.date === date).map((c) => c.task_id));
 }

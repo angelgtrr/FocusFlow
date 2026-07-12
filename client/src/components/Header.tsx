@@ -1,6 +1,6 @@
 interface HeaderProps {
-  tab: 'daily' | 'admin';
-  onTabChange: (tab: 'daily' | 'admin') => void;
+  tab: 'daily' | 'dimensions' | 'tasks';
+  onTabChange: (tab: 'daily' | 'dimensions' | 'tasks') => void;
   onLogout: () => void;
 }
 
@@ -43,14 +43,24 @@ export default function Header({ tab, onTabChange, onLogout }: HeaderProps) {
             Daily
           </button>
           <button
-            onClick={() => onTabChange('admin')}
+            onClick={() => onTabChange('dimensions')}
             className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
-              tab === 'admin'
+              tab === 'dimensions'
                 ? 'border-violet-500 text-violet-300'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Admin Goals
+            Dimensions
+          </button>
+          <button
+            onClick={() => onTabChange('tasks')}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+              tab === 'tasks'
+                ? 'border-violet-500 text-violet-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Tasks
           </button>
         </nav>
       </div>

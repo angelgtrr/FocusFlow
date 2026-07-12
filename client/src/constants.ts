@@ -25,6 +25,8 @@ const DIMENSION_PALETTE = [
   'bg-orange-500/20 text-orange-300 border-orange-500/40',
 ];
 
+export const NO_DIMENSION_STYLE = 'bg-slate-800/50 text-slate-500 border-slate-700';
+
 export function dimensionColor(dimension: string): string {
   let hash = 0;
   for (let i = 0; i < dimension.length; i++) {

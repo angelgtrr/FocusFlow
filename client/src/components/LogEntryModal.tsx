@@ -1,45 +1,47 @@
-import { useMemo, useState } from 'react';
-import type { Goal } from '../types';
+import { useState } from 'react';
+import type { Dimension } from '../types';
 import { SCORE_LABELS } from '../types';
-import { dimensionsFromGoals } from '../utils';
 import { SCORE_RING_COLORS } from '../constants';
+import { todayKey } from '../utils';
 
 interface LogEntryModalProps {
-  goals: Goal[];
+  dimensions: Dimension[];
+  initialDimensionId?: number;
+  initialScore?: number | null;
+  initialNote?: string;
+  initialDate?: string;
   onClose: () => void;
-  onSubmit: (data: { goal_id: number; score: number; note: string }) => Promise<void>;
+  onSubmit: (data: { dimension_id: number; date: string; score: number; note: string }) => Promise<void>;
 }
 
-export default function LogEntryModal({ goals, onClose, onSubmit }: LogEntryModalProps) {
-  const activeGoals = useMemo(() => goals.filter((g) => g.status === 'active'), [goals]);
-  const dimensions = useMemo(() => dimensionsFromGoals(activeGoals), [activeGoals]);
-
-  const [dimension, setDimension] = useState(dimensions[0] ?? '');
-  const goalsInDimension = useMemo(
-    () => activeGoals.filter((g) => g.dimension === dimension),
-    [activeGoals, dimension]
+export default function LogEntryModal({
+  dimensions,
+  initialDimensionId,
+  initialScore = null,
+  initialNote = '',
+  initialDate,
+  onClose,
+  onSubmit,
+}: LogEntryModalProps) {
+  const [dimensionId, setDimensionId] = useState<number | ''>(
+    initialDimensionId ?? dimensions[0]?.id ?? ''
   );
-  const [goalId, setGoalId] = useState<number | ''>(goalsInDimension[0]?.id ?? '');
-  const [score, setScore] = useState<number | null>(null);
-  const [note, setNote] = useState('');
+  const [date, setDate] = useState(initialDate ?? todayKey());
+  const [score, setScore] = useState<number | null>(initialScore);
+  const [note, setNote] = useState(initialNote);
+  const isEditing = initialScore !== null && initialScore !== undefined;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handleDimensionChange(dim: string) {
-    setDimension(dim);
-    const first = activeGoals.find((g) => g.dimension === dim);
-    setGoalId(first?.id ?? '');
-  }
-
   async function handleSubmit() {
-    if (!goalId || score === null) {
-      setError('Pick a goal and a score first.');
+    if (!dimensionId || !date || score === null) {
+      setError('Pick a dimension, a date, and a score first.');
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      await onSubmit({ goal_id: goalId, score, note });
+      await onSubmit({ dimension_id: dimensionId, date, score, note });
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -48,12 +50,12 @@ export default function LogEntryModal({ goals, onClose, onSubmit }: LogEntryModa
     }
   }
 
-  if (activeGoals.length === 0) {
+  if (dimensions.length === 0) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
         <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6">
           <p className="text-slate-300">
-            No active goals yet. Head to <span className="text-violet-400">Admin Goals</span> to
+            No dimensions yet. Head to <span className="text-violet-400">Dimensions</span> to
             create one first.
           </p>
           <button
@@ -76,35 +78,33 @@ export default function LogEntryModal({ goals, onClose, onSubmit }: LogEntryModa
         className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-slate-100">Log today's progress</h2>
+        <h2 className="text-lg font-semibold text-slate-100">
+          {isEditing ? 'Update progress' : 'Log progress'}
+        </h2>
 
         <label className="mt-4 block text-xs uppercase tracking-wide text-slate-500">
           Dimension
         </label>
         <select
-          value={dimension}
-          onChange={(e) => handleDimensionChange(e.target.value)}
+          value={dimensionId}
+          onChange={(e) => setDimensionId(Number(e.target.value))}
           className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100"
         >
           {dimensions.map((d) => (
-            <option key={d} value={d}>
-              {d}
+            <option key={d.id} value={d.id}>
+              {d.name}
             </option>
           ))}
         </select>
 
-        <label className="mt-4 block text-xs uppercase tracking-wide text-slate-500">Goal</label>
-        <select
-          value={goalId}
-          onChange={(e) => setGoalId(Number(e.target.value))}
-          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100"
-        >
-          {goalsInDimension.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.title}
-            </option>
-          ))}
-        </select>
+        <label className="mt-4 block text-xs uppercase tracking-wide text-slate-500">Date</label>
+        <input
+          type="date"
+          value={date}
+          max={todayKey()}
+          onChange={(e) => setDate(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 [color-scheme:dark]"
+        />
 
         <label className="mt-4 block text-xs uppercase tracking-wide text-slate-500">Score</label>
         <div className="mt-2 grid grid-cols-5 gap-2">
