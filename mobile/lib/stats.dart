@@ -76,3 +76,14 @@ List<DimensionProgress> buildDimensionProgress(List<Dimension> dimensions, List<
 Set<int> completedTaskIdsForDate(List<TaskCompletion> completions, String date) {
   return completions.where((c) => c.date == date).map((c) => c.taskId).toSet();
 }
+
+Set<String> activeDateKeys(List<Entry> entries, List<TaskCompletion> taskCompletions) {
+  final keys = <String>{};
+  for (final e in entries) {
+    keys.add(e.date);
+  }
+  for (final c in taskCompletions) {
+    keys.add(c.date);
+  }
+  return keys;
+}

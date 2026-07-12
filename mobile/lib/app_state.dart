@@ -77,13 +77,18 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> logEntry({required int dimensionId, required int score, required String note}) async {
-    await api.logEntry(dimensionId: dimensionId, date: todayKey(), score: score, note: note);
+  Future<void> logEntry({
+    required int dimensionId,
+    required int score,
+    required String note,
+    String? date,
+  }) async {
+    await api.logEntry(dimensionId: dimensionId, date: date ?? todayKey(), score: score, note: note);
     await refresh();
   }
 
-  Future<void> toggleTaskCompletion(int taskId, bool completed) async {
-    final date = todayKey();
+  Future<void> toggleTaskCompletion(int taskId, bool completed, [String? forDate]) async {
+    final date = forDate ?? todayKey();
     if (completed) {
       await api.completeTask(taskId, date);
     } else {

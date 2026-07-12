@@ -4,7 +4,6 @@ import { SCORE_LABELS } from '../types';
 import StatsBar from '../components/StatsBar';
 import Heatmap from '../components/Heatmap';
 import TrendChart from '../components/TrendChart';
-import TodayEntries from '../components/TodayEntries';
 import TaskChecklist from '../components/TaskChecklist';
 import LogEntryModal from '../components/LogEntryModal';
 import MonthCalendar from '../components/MonthCalendar';
@@ -50,7 +49,12 @@ export default function DailyPage({
   const [editDimensionId, setEditDimensionId] = useState<number | null>(null);
   const [dimensionFilter, setDimensionFilter] = useState<number | 'all'>('all');
   const [selectedDate, setSelectedDate] = useState(todayKey());
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const isToday = selectedDate === todayKey();
+
+  function goToYesterday() {
+    setSelectedDate(toDateKey(addDays(keyToDate(todayKey()), -1)));
+  }
 
   const activeTasks = useMemo(() => tasks.filter((t) => t.status === 'active'), [tasks]);
 
@@ -64,11 +68,6 @@ export default function DailyPage({
     () =>
       dimensionFilter === 'all' ? dimensions : dimensions.filter((d) => d.id === dimensionFilter),
     [dimensions, dimensionFilter]
-  );
-
-  const todaysEntries = useMemo(
-    () => filteredEntries.filter((e) => e.date === selectedDate),
-    [filteredEntries, selectedDate]
   );
 
   const allTodaysEntries = useMemo(
@@ -110,31 +109,67 @@ export default function DailyPage({
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 space-y-8">
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          {formatDayHeading(selectedDate)}
-        </h2>
-        <div className="mt-3">
-          <MonthCalendar
-            selectedDate={selectedDate}
-            onSelect={setSelectedDate}
-            activeDates={activeDates}
-          />
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+            {formatDayHeading(selectedDate)}
+          </h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToYesterday}
+              className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+            >
+              Yesterday
+            </button>
+            <button
+              onClick={() => setCalendarOpen((v) => !v)}
+              aria-label="Toggle calendar"
+              aria-expanded={calendarOpen}
+              className={`flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 ${
+                calendarOpen ? 'bg-slate-800 text-violet-400' : ''
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-4 w-4"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.5A2.25 2.25 0 0 1 17.75 6.25v9A2.25 2.25 0 0 1 15.5 17.5h-11A2.25 2.25 0 0 1 2.25 15.25v-9A2.25 2.25 0 0 1 4.5 4H5V2.75A.75.75 0 0 1 5.75 2ZM3.75 8v7.25c0 .414.336.75.75.75h11a.75.75 0 0 0 .75-.75V8h-12.5Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
+        {calendarOpen && (
+          <div className="mt-3">
+            <MonthCalendar
+              selectedDate={selectedDate}
+              onSelect={setSelectedDate}
+              activeDates={activeDates}
+            />
+          </div>
+        )}
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Day note
-        </h2>
-        <div className="mt-3">
-          <DayNoteEditor date={selectedDate} note={selectedDayNote} onSave={onSaveDayNote} />
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+            Dimensions
+          </h2>
+          <button
+            onClick={() => {
+              setEditDimensionId(null);
+              setModalOpen(true);
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 text-xl leading-none text-white shadow-lg hover:bg-violet-500"
+            aria-label="Log new entry"
+          >
+            +
+          </button>
         </div>
-      </section>
-
-      <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Dimensions
-        </h2>
         {dimensionProgress.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">
             No dimensions yet. Head to the Dimensions tab to add one.
@@ -186,6 +221,15 @@ export default function DailyPage({
 
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          Day note
+        </h2>
+        <div className="mt-3">
+          <DayNoteEditor date={selectedDate} note={selectedDayNote} onSave={onSaveDayNote} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
           Tasks
         </h2>
         <div className="mt-3">
@@ -220,27 +264,6 @@ export default function DailyPage({
         tasksDoneToday={tasksDoneToday}
         tasksDoneLabel={isToday ? 'Tasks Done Today' : 'Tasks Done'}
       />
-
-      <section>
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            {isToday ? "Today's log" : `Log for ${formatDayHeading(selectedDate)}`}
-          </h2>
-          <button
-            onClick={() => {
-              setEditDimensionId(null);
-              setModalOpen(true);
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 text-xl leading-none text-white shadow-lg hover:bg-violet-500"
-            aria-label="Log new entry"
-          >
-            +
-          </button>
-        </div>
-        <div className="mt-3">
-          <TodayEntries entries={todaysEntries} />
-        </div>
-      </section>
 
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">

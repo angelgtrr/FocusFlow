@@ -7,29 +7,87 @@ import '../stats.dart';
 import '../theme.dart';
 import '../widgets/heatmap.dart';
 import '../widgets/log_entry_sheet.dart';
+import '../widgets/month_calendar.dart';
 import '../widgets/today_progress_chart.dart';
 
-class DailyPage extends StatelessWidget {
+class DailyPage extends StatefulWidget {
   final AppState appState;
   const DailyPage({super.key, required this.appState});
 
   @override
+  State<DailyPage> createState() => _DailyPageState();
+}
+
+class _DailyPageState extends State<DailyPage> {
+  String _selectedDate = todayKey();
+  bool _calendarOpen = false;
+
+  void _goToYesterday() {
+    setState(() => _selectedDate = toDateKey(addDays(keyToDate(todayKey()), -1)));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final today = todayKey();
-    final todaysEntries = appState.entries.where((e) => e.date == today).toList();
-    final dimensionProgress = buildDimensionProgress(appState.dimensions, todaysEntries);
+    final appState = widget.appState;
+    final selectedDate = _selectedDate;
+    final selectedEntries = appState.entries.where((e) => e.date == selectedDate).toList();
+    final dimensionProgress = buildDimensionProgress(appState.dimensions, selectedEntries);
     final activeTasks = appState.tasks.where((t) => t.status == TaskStatus.active).toList();
-    final completedIds = completedTaskIdsForDate(appState.taskCompletions, today);
+    final completedIds = completedTaskIdsForDate(appState.taskCompletions, selectedDate);
     final heatmapDays = buildHeatmap(appState.entries);
     final streak = currentStreak(appState.entries);
     final weeklyPct = weeklyProgressPct(appState.entries, appState.dimensions);
+    final activeDates = activeDateKeys(appState.entries, appState.taskCompletions);
 
     return RefreshIndicator(
       onRefresh: appState.refresh,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
-          Text(formatDayHeading(today), style: _sectionTitle),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(formatDayHeading(selectedDate), style: _sectionTitle),
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: _goToYesterday,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.slate700),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Yesterday', style: TextStyle(color: AppColors.slate300, fontSize: 12)),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => setState(() => _calendarOpen = !_calendarOpen),
+                    tooltip: 'Toggle calendar',
+                    style: IconButton.styleFrom(
+                      backgroundColor: _calendarOpen ? AppColors.slate800 : null,
+                      side: const BorderSide(color: AppColors.slate700),
+                      minimumSize: const Size(32, 32),
+                      padding: EdgeInsets.zero,
+                    ),
+                    icon: Icon(
+                      Icons.calendar_month_outlined,
+                      size: 18,
+                      color: _calendarOpen ? AppColors.violet400 : AppColors.slate300,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (_calendarOpen) ...[
+            const SizedBox(height: 12),
+            MonthCalendar(
+              selectedDate: selectedDate,
+              onSelect: (date) => setState(() => _selectedDate = date),
+              activeDates: activeDates,
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -57,7 +115,7 @@ class DailyPage extends StatelessWidget {
             children: [
               Text('Dimensions', style: _sectionTitle),
               TextButton.icon(
-                onPressed: () => showLogEntrySheet(context: context, appState: appState),
+                onPressed: () => showLogEntrySheet(context: context, appState: appState, date: selectedDate),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Log'),
               ),
@@ -73,7 +131,12 @@ class DailyPage extends StatelessWidget {
             ...dimensionProgress.map(
               (p) => _DimensionProgressTile(
                 progress: p,
-                onTap: () => showLogEntrySheet(context: context, appState: appState, initialDimensionId: p.dimension.id),
+                onTap: () => showLogEntrySheet(
+                  context: context,
+                  appState: appState,
+                  date: selectedDate,
+                  initialDimensionId: p.dimension.id,
+                ),
               ),
             ),
 
@@ -90,7 +153,7 @@ class DailyPage extends StatelessWidget {
               (t) => _TaskCheckTile(
                 task: t,
                 completed: completedIds.contains(t.id),
-                onChanged: (completed) => appState.toggleTaskCompletion(t.id, completed),
+                onChanged: (completed) => appState.toggleTaskCompletion(t.id, completed, selectedDate),
               ),
             ),
 

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
-import '../date_utils.dart';
 import '../models.dart';
 import '../theme.dart';
 
 Future<void> showLogEntrySheet({
   required BuildContext context,
   required AppState appState,
+  required String date,
   int? initialDimensionId,
 }) {
   if (appState.dimensions.isEmpty) {
@@ -35,16 +35,17 @@ Future<void> showLogEntrySheet({
     ),
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-      child: _LogEntrySheetContent(appState: appState, initialDimensionId: initialDimensionId),
+      child: _LogEntrySheetContent(appState: appState, date: date, initialDimensionId: initialDimensionId),
     ),
   );
 }
 
 class _LogEntrySheetContent extends StatefulWidget {
   final AppState appState;
+  final String date;
   final int? initialDimensionId;
 
-  const _LogEntrySheetContent({required this.appState, this.initialDimensionId});
+  const _LogEntrySheetContent({required this.appState, required this.date, this.initialDimensionId});
 
   @override
   State<_LogEntrySheetContent> createState() => _LogEntrySheetContentState();
@@ -67,9 +68,8 @@ class _LogEntrySheetContentState extends State<_LogEntrySheetContent> {
   }
 
   Entry? _existingEntry() {
-    final today = todayKey();
     for (final e in widget.appState.entries) {
-      if (e.dimensionId == dimensionId && e.date == today) return e;
+      if (e.dimensionId == dimensionId && e.date == widget.date) return e;
     }
     return null;
   }
@@ -94,7 +94,12 @@ class _LogEntrySheetContentState extends State<_LogEntrySheetContent> {
       error = null;
     });
     try {
-      await widget.appState.logEntry(dimensionId: dimensionId, score: score!, note: noteController.text.trim());
+      await widget.appState.logEntry(
+        dimensionId: dimensionId,
+        score: score!,
+        note: noteController.text.trim(),
+        date: widget.date,
+      );
       if (mounted) Navigator.pop(context);
     } catch (e) {
       setState(() => error = e.toString());

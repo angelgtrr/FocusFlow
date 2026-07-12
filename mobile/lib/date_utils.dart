@@ -7,6 +7,20 @@ String toDateKey(DateTime date) {
 
 String todayKey() => toDateKey(DateTime.now());
 
+DateTime keyToDate(String key) {
+  final parts = key.split('-').map(int.parse).toList();
+  return DateTime(parts[0], parts[1], parts[2]);
+}
+
+DateTime addDays(DateTime date, int n) => date.add(Duration(days: n));
+
+DateTime addMonths(DateTime date, int n) {
+  final total = date.month - 1 + n;
+  final year = date.year + total ~/ 12;
+  final month = total % 12 + 1;
+  return DateTime(year, month, date.day);
+}
+
 DateTime startOfDay(DateTime date) => DateTime(date.year, date.month, date.day);
 
 DateTime startOfWeek(DateTime date) {
@@ -48,4 +62,28 @@ String formatDayHeading(String dateKey) {
   final weekday = _weekdayNames[date.weekday - 1];
   final month = _monthNames[date.month - 1];
   return '$weekday, $month ${date.day}${includeYear ? ', ${date.year}' : ''}';
+}
+
+class MonthGridDay {
+  final String key;
+  final DateTime date;
+  final bool inMonth;
+  MonthGridDay({required this.key, required this.date, required this.inMonth});
+}
+
+List<MonthGridDay> buildMonthGrid(DateTime monthDate) {
+  final firstOfMonth = DateTime(monthDate.year, monthDate.month, 1);
+  final lastOfMonth = DateTime(monthDate.year, monthDate.month + 1, 0);
+  final start = startOfWeek(firstOfMonth);
+  final end = startOfWeek(lastOfMonth).add(const Duration(days: 6));
+
+  final days = <MonthGridDay>[];
+  var cursor = start;
+  while (!cursor.isAfter(end)) {
+    days.add(
+      MonthGridDay(key: toDateKey(cursor), date: cursor, inMonth: cursor.month == monthDate.month),
+    );
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return days;
 }
