@@ -12,12 +12,15 @@ import DayNoteEditor from '../components/DayNoteEditor';
 import { SCORE_COLORS, dimensionColor } from '../constants';
 import {
   activeDateKeys,
+  addDays,
   buildDimensionProgress,
   buildHeatmap,
   buildTrend,
   completedTaskIdsForDate,
   currentStreak,
   formatDayHeading,
+  keyToDate,
+  toDateKey,
   todayKey,
   weeklyProgressPct,
 } from '../utils';
