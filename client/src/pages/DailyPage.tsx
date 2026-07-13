@@ -56,6 +56,10 @@ export default function DailyPage({
     setSelectedDate(toDateKey(addDays(keyToDate(todayKey()), -1)));
   }
 
+  function goToToday() {
+    setSelectedDate(todayKey());
+  }
+
   const activeTasks = useMemo(() => tasks.filter((t) => t.status === 'active'), [tasks]);
 
   const filteredEntries = useMemo(
@@ -115,10 +119,10 @@ export default function DailyPage({
           </h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={goToYesterday}
+              onClick={isToday ? goToYesterday : goToToday}
               className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
             >
-              Yesterday
+              {isToday ? 'Yesterday' : 'Today'}
             </button>
             <button
               onClick={() => setCalendarOpen((v) => !v)}
@@ -213,6 +217,9 @@ export default function DailyPage({
                     <span className="text-sm text-slate-500">Not logged</span>
                   )}
                 </div>
+                {row.loggedToday && row.entry?.note && (
+                  <p className="mt-2 text-sm text-slate-400">{row.entry.note}</p>
+                )}
               </div>
             ))}
           </div>

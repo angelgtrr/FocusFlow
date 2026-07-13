@@ -26,10 +26,15 @@ class _DailyPageState extends State<DailyPage> {
     setState(() => _selectedDate = toDateKey(addDays(keyToDate(todayKey()), -1)));
   }
 
+  void _goToToday() {
+    setState(() => _selectedDate = todayKey());
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = widget.appState;
     final selectedDate = _selectedDate;
+    final isToday = selectedDate == todayKey();
     final selectedEntries = appState.entries.where((e) => e.date == selectedDate).toList();
     final dimensionProgress = buildDimensionProgress(appState.dimensions, selectedEntries);
     final activeTasks = appState.tasks.where((t) => t.status == TaskStatus.active).toList();
@@ -51,14 +56,17 @@ class _DailyPageState extends State<DailyPage> {
               Row(
                 children: [
                   OutlinedButton(
-                    onPressed: _goToYesterday,
+                    onPressed: isToday ? _goToYesterday : _goToToday,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.slate700),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('Yesterday', style: TextStyle(color: AppColors.slate300, fontSize: 12)),
+                    child: Text(
+                      isToday ? 'Yesterday' : 'Today',
+                      style: const TextStyle(color: AppColors.slate300, fontSize: 12),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
@@ -234,37 +242,49 @@ class _DimensionProgressTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.slate800),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.16),
-                  border: Border.all(color: color.withValues(alpha: 0.4)),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(d.name, style: TextStyle(color: color, fontSize: 12)),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.16),
+                      border: Border.all(color: color.withValues(alpha: 0.4)),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(d.name, style: TextStyle(color: color, fontSize: 12)),
+                  ),
+                  const Spacer(),
+                  if (progress.loggedToday)
+                    Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(color: scoreColors[progress.entry!.score], shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          scoreLabels[progress.entry!.score],
+                          style: const TextStyle(color: AppColors.slate300, fontSize: 12),
+                        ),
+                      ],
+                    )
+                  else
+                    const Text('Not logged', style: TextStyle(color: AppColors.slate500, fontSize: 12)),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.chevron_right, color: AppColors.slate600, size: 18),
+                ],
               ),
-              const Spacer(),
-              if (progress.loggedToday)
-                Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(color: scoreColors[progress.entry!.score], shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      scoreLabels[progress.entry!.score],
-                      style: const TextStyle(color: AppColors.slate300, fontSize: 12),
-                    ),
-                  ],
-                )
-              else
-                const Text('Not logged', style: TextStyle(color: AppColors.slate500, fontSize: 12)),
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right, color: AppColors.slate600, size: 18),
+              if (progress.loggedToday && (progress.entry!.note.isNotEmpty)) ...[
+                const SizedBox(height: 6),
+                Text(
+                  progress.entry!.note,
+                  style: const TextStyle(color: AppColors.slate400, fontSize: 12),
+                ),
+              ],
             ],
           ),
         ),

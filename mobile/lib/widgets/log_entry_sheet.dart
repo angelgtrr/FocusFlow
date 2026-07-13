@@ -35,7 +35,9 @@ Future<void> showLogEntrySheet({
     ),
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-      child: _LogEntrySheetContent(appState: appState, date: date, initialDimensionId: initialDimensionId),
+      child: SafeArea(
+        child: _LogEntrySheetContent(appState: appState, date: date, initialDimensionId: initialDimensionId),
+      ),
     ),
   );
 }
