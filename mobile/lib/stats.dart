@@ -77,13 +77,16 @@ Set<int> completedTaskIdsForDate(List<TaskCompletion> completions, String date) 
   return completions.where((c) => c.date == date).map((c) => c.taskId).toSet();
 }
 
-Set<String> activeDateKeys(List<Entry> entries, List<TaskCompletion> taskCompletions) {
+Set<String> activeDateKeys(List<Entry> entries, List<TaskCompletion> taskCompletions, List<DayNote> dayNotes) {
   final keys = <String>{};
   for (final e in entries) {
     keys.add(e.date);
   }
   for (final c in taskCompletions) {
     keys.add(c.date);
+  }
+  for (final n in dayNotes) {
+    if (n.note.trim().isNotEmpty) keys.add(n.date);
   }
   return keys;
 }

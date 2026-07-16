@@ -81,6 +81,22 @@ class Entry {
   );
 }
 
+class DayNote {
+  final String date; // YYYY-MM-DD
+  final String note;
+  final String createdAt;
+  final String updatedAt;
+
+  DayNote({required this.date, required this.note, required this.createdAt, required this.updatedAt});
+
+  factory DayNote.fromJson(Map<String, dynamic> json) => DayNote(
+    date: json['date'] as String,
+    note: (json['note'] as String?) ?? '',
+    createdAt: json['created_at'] as String,
+    updatedAt: json['updated_at'] as String,
+  );
+}
+
 class TaskCompletion {
   final int id;
   final int taskId;

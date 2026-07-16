@@ -202,4 +202,14 @@ class ApiClient {
     '/task-completions',
     query: {'task_id': taskId.toString(), 'date': date},
   );
+
+  // --- Day notes ---
+
+  Future<List<DayNote>> getDayNotes() async {
+    final data = await _request('GET', '/day-notes') as List;
+    return data.map((e) => DayNote.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> saveDayNote(String date, String note) =>
+      _request('POST', '/day-notes', body: {'date': date, 'note': note});
 }

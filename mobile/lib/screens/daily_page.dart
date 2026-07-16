@@ -5,6 +5,7 @@ import '../date_utils.dart';
 import '../models.dart';
 import '../stats.dart';
 import '../theme.dart';
+import '../widgets/day_note_editor.dart';
 import '../widgets/heatmap.dart';
 import '../widgets/log_entry_sheet.dart';
 import '../widgets/month_calendar.dart';
@@ -42,7 +43,9 @@ class _DailyPageState extends State<DailyPage> {
     final heatmapDays = buildHeatmap(appState.entries);
     final streak = currentStreak(appState.entries);
     final weeklyPct = weeklyProgressPct(appState.entries, appState.dimensions);
-    final activeDates = activeDateKeys(appState.entries, appState.taskCompletions);
+    final activeDates = activeDateKeys(appState.entries, appState.taskCompletions, appState.dayNotes);
+    final matchingDayNotes = appState.dayNotes.where((n) => n.date == selectedDate);
+    final selectedDayNote = matchingDayNotes.isEmpty ? '' : matchingDayNotes.first.note;
 
     return RefreshIndicator(
       onRefresh: appState.refresh,
@@ -147,6 +150,15 @@ class _DailyPageState extends State<DailyPage> {
                 ),
               ),
             ),
+
+          const SizedBox(height: 24),
+          Text('Day note', style: _sectionTitle),
+          const SizedBox(height: 8),
+          DayNoteEditor(
+            date: selectedDate,
+            note: selectedDayNote,
+            onSave: appState.saveDayNote,
+          ),
 
           const SizedBox(height: 24),
           Text('Tasks', style: _sectionTitle),

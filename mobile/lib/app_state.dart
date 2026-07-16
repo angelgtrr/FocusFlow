@@ -16,6 +16,7 @@ class AppState extends ChangeNotifier {
   List<Task> tasks = [];
   List<Entry> entries = [];
   List<TaskCompletion> taskCompletions = [];
+  List<DayNote> dayNotes = [];
 
   Future<void> init() async {
     await api.load();
@@ -49,6 +50,7 @@ class AppState extends ChangeNotifier {
     tasks = [];
     entries = [];
     taskCompletions = [];
+    dayNotes = [];
     notifyListeners();
   }
 
@@ -62,11 +64,13 @@ class AppState extends ChangeNotifier {
         api.getEntries(),
         api.getDimensions(),
         api.getTaskCompletions(),
+        api.getDayNotes(),
       ]);
       tasks = results[0] as List<Task>;
       entries = results[1] as List<Entry>;
       dimensions = results[2] as List<Dimension>;
       taskCompletions = results[3] as List<TaskCompletion>;
+      dayNotes = results[4] as List<DayNote>;
     } on UnauthorizedException {
       authenticated = false;
     } catch (e) {
@@ -128,6 +132,11 @@ class AppState extends ChangeNotifier {
 
   Future<void> deleteTask(int id) async {
     await api.deleteTask(id);
+    await refresh();
+  }
+
+  Future<void> saveDayNote(String date, String note) async {
+    await api.saveDayNote(date, note);
     await refresh();
   }
 }
