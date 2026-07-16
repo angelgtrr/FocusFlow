@@ -3,15 +3,11 @@ import 'package:flutter/material.dart';
 import '../stats.dart';
 import '../theme.dart';
 
+const _kLegendSteps = 9;
+
 class Heatmap extends StatelessWidget {
   final List<HeatmapDay> days;
   const Heatmap({super.key, required this.days});
-
-  Color _colorFor(double? avgScore) {
-    if (avgScore == null) return AppColors.slate900;
-    final bucket = avgScore.round().clamp(0, 4);
-    return scoreColors[bucket];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +37,7 @@ class Heatmap extends StatelessWidget {
                             width: 14,
                             height: 14,
                             decoration: BoxDecoration(
-                              color: _colorFor(day.avgScore),
+                              color: scoreColorForAvg(day.avgScore),
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
@@ -57,12 +53,15 @@ class Heatmap extends StatelessWidget {
           children: [
             const Text('Less', style: TextStyle(color: AppColors.slate500, fontSize: 11)),
             const SizedBox(width: 4),
-            for (final c in scoreColors)
+            for (var i = 0; i < _kLegendSteps; i++)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 1),
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: scoreColorForAvg(4 * i / (_kLegendSteps - 1)),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             const SizedBox(width: 4),
             const Text('More', style: TextStyle(color: AppColors.slate500, fontSize: 11)),

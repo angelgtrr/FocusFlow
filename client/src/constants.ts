@@ -6,6 +6,32 @@ export const SCORE_COLORS: Record<number, string> = {
   4: 'bg-emerald-400',
 };
 
+// RGB stops matching SCORE_COLORS, used to interpolate smooth in-between
+// shades for fractional average scores (e.g. multiple dimensions/day).
+const SCORE_COLOR_STOPS: [number, number, number][] = [
+  [30, 41, 59], // slate-800
+  [136, 19, 55], // rose-900
+  [180, 83, 9], // amber-700
+  [4, 120, 87], // emerald-700
+  [52, 211, 153], // emerald-400
+];
+
+const NO_ENTRY_COLOR = 'rgb(15, 23, 42)'; // slate-900
+
+export function scoreColorForAvg(avgScore: number | null): string {
+  if (avgScore === null) return NO_ENTRY_COLOR;
+  const clamped = Math.min(4, Math.max(0, avgScore));
+  const lower = Math.floor(clamped);
+  const upper = Math.min(4, lower + 1);
+  const t = clamped - lower;
+  const [r1, g1, b1] = SCORE_COLOR_STOPS[lower];
+  const [r2, g2, b2] = SCORE_COLOR_STOPS[upper];
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 export const SCORE_RING_COLORS: Record<number, string> = {
   0: 'ring-slate-600',
   1: 'ring-rose-500',

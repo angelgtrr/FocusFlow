@@ -45,6 +45,18 @@ const List<Color> scoreColors = [
   AppColors.emerald400,
 ];
 
+/// Interpolated shade for a (possibly fractional) average score, so days
+/// with a mix of dimension scores render a smooth in-between shade instead
+/// of snapping to the nearest bucket. Mirrors scoreColorForAvg in constants.ts.
+Color scoreColorForAvg(double? avgScore) {
+  if (avgScore == null) return AppColors.slate900;
+  final clamped = avgScore.clamp(0, 4).toDouble();
+  final lower = clamped.floor();
+  final upper = (lower + 1).clamp(0, 4);
+  final t = clamped - lower;
+  return Color.lerp(scoreColors[lower], scoreColors[upper], t)!;
+}
+
 // Score 0-4 -> accent color for selection rings (mirrors SCORE_RING_COLORS)
 const List<Color> scoreRingColors = [
   AppColors.slate600,

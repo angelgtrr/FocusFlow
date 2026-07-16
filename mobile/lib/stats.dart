@@ -31,6 +31,37 @@ List<HeatmapDay> buildHeatmap(List<Entry> entries, {int weeks = 12}) {
   return days;
 }
 
+class TrendPoint {
+  final String date;
+  final double avgScore;
+  TrendPoint({required this.date, required this.avgScore});
+}
+
+List<TrendPoint> buildTrend(List<Entry> entries, {int days = 30}) {
+  final byDate = <String, List<int>>{};
+  for (final e in entries) {
+    (byDate[e.date] ??= []).add(e.score);
+  }
+
+  final end = startOfDay(DateTime.now());
+  final start = end.subtract(Duration(days: days - 1));
+
+  final points = <TrendPoint>[];
+  var cursor = start;
+  while (!cursor.isAfter(end)) {
+    final key = toDateKey(cursor);
+    final scores = byDate[key];
+    points.add(
+      TrendPoint(
+        date: key,
+        avgScore: scores == null ? 0 : scores.reduce((a, b) => a + b) / scores.length,
+      ),
+    );
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return points;
+}
+
 int currentStreak(List<Entry> entries) {
   final daysWithProgress = entries.where((e) => e.score >= 1).map((e) => e.date).toSet();
   var streak = 0;

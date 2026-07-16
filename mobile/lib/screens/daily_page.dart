@@ -10,6 +10,7 @@ import '../widgets/heatmap.dart';
 import '../widgets/log_entry_sheet.dart';
 import '../widgets/month_calendar.dart';
 import '../widgets/today_progress_chart.dart';
+import '../widgets/trend_chart.dart';
 
 class DailyPage extends StatefulWidget {
   final AppState appState;
@@ -41,6 +42,7 @@ class _DailyPageState extends State<DailyPage> {
     final activeTasks = appState.tasks.where((t) => t.status == TaskStatus.active).toList();
     final completedIds = completedTaskIdsForDate(appState.taskCompletions, selectedDate);
     final heatmapDays = buildHeatmap(appState.entries);
+    final trendData = buildTrend(appState.entries);
     final streak = currentStreak(appState.entries);
     final weeklyPct = weeklyProgressPct(appState.entries, appState.dimensions);
     final activeDates = activeDateKeys(appState.entries, appState.taskCompletions, appState.dayNotes);
@@ -181,6 +183,11 @@ class _DailyPageState extends State<DailyPage> {
           Text('Consistency', style: _sectionTitle),
           const SizedBox(height: 12),
           _Card(child: Heatmap(days: heatmapDays)),
+
+          const SizedBox(height: 24),
+          Text('30-day trend', style: _sectionTitle),
+          const SizedBox(height: 12),
+          _Card(child: TrendChart(data: trendData)),
         ],
       ),
     );
