@@ -57,6 +57,7 @@ class _LogEntrySheetContentState extends State<_LogEntrySheetContent> {
   late int dimensionId;
   int? score;
   late TextEditingController noteController;
+  final FocusNode _noteFocusNode = FocusNode();
   bool submitting = false;
   String? error;
 
@@ -67,6 +68,12 @@ class _LogEntrySheetContentState extends State<_LogEntrySheetContent> {
     final existing = _existingEntry();
     score = existing?.score;
     noteController = TextEditingController(text: existing?.note ?? '');
+  }
+
+  @override
+  void dispose() {
+    _noteFocusNode.dispose();
+    super.dispose();
   }
 
   Entry? _existingEntry() {
@@ -83,6 +90,12 @@ class _LogEntrySheetContentState extends State<_LogEntrySheetContent> {
       final existing = _existingEntry();
       score = existing?.score;
       noteController.text = existing?.note ?? '';
+    });
+    // Closing the dropdown's menu route sometimes hands keyboard focus to the
+    // next focusable widget (the note field) instead of releasing it — a known
+    // Flutter framework quirk. Explicitly drop focus once that settles.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_noteFocusNode.hasFocus) _noteFocusNode.unfocus();
     });
   }
 
@@ -177,6 +190,7 @@ class _LogEntrySheetContentState extends State<_LogEntrySheetContent> {
           const SizedBox(height: 6),
           TextField(
             controller: noteController,
+            focusNode: _noteFocusNode,
             maxLines: 3,
             style: const TextStyle(color: AppColors.slate100),
             decoration: const InputDecoration(hintText: 'What did you do today?'),
