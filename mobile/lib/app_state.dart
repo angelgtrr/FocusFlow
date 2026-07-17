@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 import 'date_utils.dart';
 import 'models.dart';
+import 'notifications.dart';
 
 class AppState extends ChangeNotifier {
   final ApiClient api = ApiClient();
@@ -51,6 +54,7 @@ class AppState extends ChangeNotifier {
     entries = [];
     taskCompletions = [];
     dayNotes = [];
+    if (Platform.isAndroid) await hideProgressNotification();
     notifyListeners();
   }
 
@@ -71,6 +75,14 @@ class AppState extends ChangeNotifier {
       dimensions = results[2] as List<Dimension>;
       taskCompletions = results[3] as List<TaskCompletion>;
       dayNotes = results[4] as List<DayNote>;
+      if (Platform.isAndroid) {
+        await updateProgressNotificationFrom(
+          dimensions: dimensions,
+          entries: entries,
+          tasks: tasks,
+          taskCompletions: taskCompletions,
+        );
+      }
     } on UnauthorizedException {
       authenticated = false;
     } catch (e) {

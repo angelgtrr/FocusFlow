@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import db from '../db.js';
+import { notifyProgress } from '../push.js';
 
 const router = Router();
 
@@ -45,12 +46,14 @@ router.post('/', (req, res) => {
     .get(dimension_id, date);
 
   res.status(201).json(entry);
+  notifyProgress().catch((err) => console.error('Push send failed:', err.message));
 });
 
 router.delete('/:id', (req, res) => {
   const result = db.prepare('DELETE FROM entries WHERE id = ?').run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'entry not found' });
   res.status(204).end();
+  notifyProgress().catch((err) => console.error('Push send failed:', err.message));
 });
 
 export default router;

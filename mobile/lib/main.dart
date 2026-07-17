@@ -1,11 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'app_state.dart';
+import 'background_tasks.dart';
+import 'notifications.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isAndroid) {
+    await initNotifications();
+    await registerProgressRefresh();
+  }
   runApp(const FocusFlowApp());
 }
 

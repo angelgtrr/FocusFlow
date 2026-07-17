@@ -7,7 +7,9 @@ import entriesRouter from './routes/entries.js';
 import dimensionsRouter from './routes/dimensions.js';
 import taskCompletionsRouter from './routes/task-completions.js';
 import dayNotesRouter from './routes/day-notes.js';
+import pushRouter from './routes/push.js';
 import { login, logout, session, requireAuth } from './middleware/auth.js';
+import { startProgressRefresh } from './push.js';
 
 const app = express();
 const PORT = process.env.PORT || 4877;
@@ -26,7 +28,10 @@ app.use('/api/entries', requireAuth, entriesRouter);
 app.use('/api/dimensions', requireAuth, dimensionsRouter);
 app.use('/api/task-completions', requireAuth, taskCompletionsRouter);
 app.use('/api/day-notes', requireAuth, dayNotesRouter);
+app.use('/api/push', requireAuth, pushRouter);
 
 app.listen(PORT, () => {
   console.log(`FocusFlow API listening on http://localhost:${PORT}`);
 });
+
+startProgressRefresh();

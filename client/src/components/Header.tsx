@@ -1,3 +1,5 @@
+import NotificationToggle from './NotificationToggle';
+
 interface HeaderProps {
   tab: 'daily' | 'dimensions' | 'tasks';
   onTabChange: (tab: 'daily' | 'dimensions' | 'tasks') => void;
@@ -24,12 +26,15 @@ export default function Header({ tab, onTabChange, onLogout }: HeaderProps) {
             </h1>
             <p className="text-sm text-slate-500 mt-1">{todayLabel()}</p>
           </div>
-          <button
-            onClick={onLogout}
-            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
-          >
-            Log out
-          </button>
+          <div className="flex items-center gap-4">
+            <NotificationToggle />
+            <button
+              onClick={onLogout}
+              className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              Log out
+            </button>
+          </div>
         </div>
         <nav className="mt-6 flex gap-1">
           <button

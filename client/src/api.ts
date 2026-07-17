@@ -64,6 +64,11 @@ export const api = {
   saveDayNote: (date: string, note: string) =>
     request<DayNote>('/day-notes', { method: 'POST', body: JSON.stringify({ date, note }) }),
 
+  getPushPublicKey: () => request<{ publicKey: string | null }>('/push/public-key'),
+
+  subscribePush: (subscription: PushSubscriptionJSON) =>
+    request<{ ok: boolean }>('/push/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
+
   login: (password: string) =>
     request<{ ok: boolean }>('/login', { method: 'POST', body: JSON.stringify({ password }) }),
 
