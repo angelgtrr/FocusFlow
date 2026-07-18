@@ -25,12 +25,13 @@ class FocusFlowApp extends StatefulWidget {
   State<FocusFlowApp> createState() => _FocusFlowAppState();
 }
 
-class _FocusFlowAppState extends State<FocusFlowApp> {
+class _FocusFlowAppState extends State<FocusFlowApp> with WidgetsBindingObserver {
   final AppState _appState = AppState();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _appState.init().then((_) => setState(() {}));
     _appState.addListener(_onStateChanged);
   }
@@ -38,7 +39,15 @@ class _FocusFlowAppState extends State<FocusFlowApp> {
   void _onStateChanged() => setState(() {});
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _appState.authenticated) {
+      _appState.refresh();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _appState.removeListener(_onStateChanged);
     super.dispose();
   }

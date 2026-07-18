@@ -18,16 +18,12 @@ void callbackDispatcher() {
       final results = await Future.wait([
         api.getDimensions(),
         api.getEntries(),
-        api.getTasks(),
-        api.getTaskCompletions(),
       ]);
 
       await initNotifications();
       await updateProgressNotificationFrom(
         dimensions: results[0] as List<Dimension>,
         entries: results[1] as List<Entry>,
-        tasks: results[2] as List<Task>,
-        taskCompletions: results[3] as List<TaskCompletion>,
       );
     } catch (_) {
       // Background task — nothing to surface errors to, just skip this run.

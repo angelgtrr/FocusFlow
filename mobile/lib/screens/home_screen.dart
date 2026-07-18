@@ -39,25 +39,32 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: appState.error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  '${appState.error}',
-                  style: const TextStyle(color: AppColors.rose400),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-          : IndexedStack(
-              index: _index,
-              children: [
-                DailyPage(appState: appState),
-                DimensionsPage(appState: appState),
-                TasksPage(appState: appState),
-              ],
-            ),
+      body: Column(
+        children: [
+          _SyncBanner(offline: appState.offline, pendingCount: appState.pendingOpsCount),
+          Expanded(
+            child: appState.error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        '${appState.error}',
+                        style: const TextStyle(color: AppColors.rose400),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : IndexedStack(
+                    index: _index,
+                    children: [
+                      DailyPage(appState: appState),
+                      DimensionsPage(appState: appState),
+                      TasksPage(appState: appState),
+                    ],
+                  ),
+          ),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
@@ -73,6 +80,46 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.checklist),
             label: 'Tasks',
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SyncBanner extends StatelessWidget {
+  final bool offline;
+  final int pendingCount;
+
+  const _SyncBanner({required this.offline, required this.pendingCount});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!offline && pendingCount == 0) return const SizedBox.shrink();
+
+    final String label;
+    final IconData icon;
+    final Color color;
+    if (offline) {
+      label = pendingCount > 0
+          ? 'Offline · $pendingCount change${pendingCount == 1 ? '' : 's'} will sync when you\'re back online'
+          : 'Offline · showing your last synced data';
+      icon = Icons.cloud_off_outlined;
+      color = AppColors.amber500;
+    } else {
+      label = 'Syncing $pendingCount change${pendingCount == 1 ? '' : 's'}...';
+      icon = Icons.cloud_sync_outlined;
+      color = AppColors.violet400;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: color.withValues(alpha: 0.12),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 8),
+          Expanded(child: Text(label, style: TextStyle(color: color, fontSize: 12))),
         ],
       ),
     );

@@ -21,21 +21,24 @@ class DailyPage extends StatefulWidget {
 }
 
 class _DailyPageState extends State<DailyPage> {
-  String _selectedDate = todayKey();
+  // null means "following today" — the date is recomputed on every build
+  // instead of being frozen, so it keeps up if the app is left running
+  // across midnight without being restarted.
+  String? _manualDate;
   bool _calendarOpen = false;
 
   void _goToYesterday() {
-    setState(() => _selectedDate = toDateKey(addDays(keyToDate(todayKey()), -1)));
+    setState(() => _manualDate = toDateKey(addDays(keyToDate(todayKey()), -1)));
   }
 
   void _goToToday() {
-    setState(() => _selectedDate = todayKey());
+    setState(() => _manualDate = null);
   }
 
   @override
   Widget build(BuildContext context) {
     final appState = widget.appState;
-    final selectedDate = _selectedDate;
+    final selectedDate = _manualDate ?? todayKey();
     final isToday = selectedDate == todayKey();
     final selectedEntries = appState.entries.where((e) => e.date == selectedDate).toList();
     final dimensionProgress = buildDimensionProgress(appState.dimensions, selectedEntries);
@@ -97,7 +100,7 @@ class _DailyPageState extends State<DailyPage> {
             const SizedBox(height: 12),
             MonthCalendar(
               selectedDate: selectedDate,
-              onSelect: (date) => setState(() => _selectedDate = date),
+              onSelect: (date) => setState(() => _manualDate = date == todayKey() ? null : date),
               activeDates: activeDates,
             ),
           ],

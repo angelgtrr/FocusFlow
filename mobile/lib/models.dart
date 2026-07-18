@@ -16,6 +16,8 @@ class Dimension {
     name: json['name'] as String,
     createdAt: json['created_at'] as String,
   );
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'created_at': createdAt};
 }
 
 class Task {
@@ -46,6 +48,16 @@ class Task {
     status: taskStatusFromString(json['status'] as String),
     createdAt: json['created_at'] as String,
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'dimension_id': dimensionId,
+    'dimension_name': dimensionName,
+    'status': status.name,
+    'created_at': createdAt,
+  };
 }
 
 class Entry {
@@ -79,6 +91,17 @@ class Entry {
     updatedAt: json['updated_at'] as String,
     dimensionName: json['dimension_name'] as String,
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'dimension_id': dimensionId,
+    'date': date,
+    'score': score,
+    'note': note,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+    'dimension_name': dimensionName,
+  };
 }
 
 class DayNote {
@@ -95,6 +118,13 @@ class DayNote {
     createdAt: json['created_at'] as String,
     updatedAt: json['updated_at'] as String,
   );
+
+  Map<String, dynamic> toJson() => {
+    'date': date,
+    'note': note,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+  };
 }
 
 class TaskCompletion {
@@ -119,4 +149,12 @@ class TaskCompletion {
     createdAt: json['created_at'] as String,
     taskTitle: (json['task_title'] as String?) ?? '',
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'task_id': taskId,
+    'date': date,
+    'created_at': createdAt,
+    'task_title': taskTitle,
+  };
 }

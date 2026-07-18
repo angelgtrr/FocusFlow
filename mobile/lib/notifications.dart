@@ -30,8 +30,8 @@ Future<void> initNotifications() async {
 Future<void> showProgressNotification({
   required int dimensionsLogged,
   required int totalDimensions,
-  required int tasksDone,
-  required int totalTasks,
+  required int currentScore,
+  required int maxScore,
 }) async {
   const androidDetails = AndroidNotificationDetails(
     _channelId,
@@ -47,7 +47,7 @@ Future<void> showProgressNotification({
   await _plugin.show(
     id: _notificationId,
     title: 'FocusFlow',
-    body: '$dimensionsLogged/$totalDimensions dimensions · $tasksDone/$totalTasks tasks done today',
+    body: '$dimensionsLogged/$totalDimensions dimensions · $currentScore/$maxScore points today',
     notificationDetails: const NotificationDetails(android: androidDetails),
   );
 }
@@ -57,8 +57,6 @@ Future<void> hideProgressNotification() => _plugin.cancel(id: _notificationId);
 Future<void> updateProgressNotificationFrom({
   required List<Dimension> dimensions,
   required List<Entry> entries,
-  required List<Task> tasks,
-  required List<TaskCompletion> taskCompletions,
 }) async {
   final today = todayKey();
   final todaysEntries = entries.where((e) => e.date == today).toList();
@@ -67,14 +65,13 @@ Future<void> updateProgressNotificationFrom({
     todaysEntries,
   ).where((d) => d.loggedToday).length;
 
-  final activeTasks = tasks.where((t) => t.status == TaskStatus.active).toList();
-  final completedIds = completedTaskIdsForDate(taskCompletions, today);
-  final tasksDone = activeTasks.where((t) => completedIds.contains(t.id)).length;
+  final currentScore = todaysEntries.fold<int>(0, (sum, e) => sum + e.score);
+  final maxScore = dimensions.length * 4;
 
   await showProgressNotification(
     dimensionsLogged: dimensionsLogged,
     totalDimensions: dimensions.length,
-    tasksDone: tasksDone,
-    totalTasks: activeTasks.length,
+    currentScore: currentScore,
+    maxScore: maxScore,
   );
 }

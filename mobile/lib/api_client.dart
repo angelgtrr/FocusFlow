@@ -16,9 +16,18 @@ class UnauthorizedException extends ApiException {
   UnauthorizedException([super.message = 'Not authenticated']);
 }
 
+/// The request never reached the server — no connection, DNS failure,
+/// timeout, etc. Distinct from [ApiException] (a response the server did
+/// send back, e.g. a validation error) so callers can tell "we're offline"
+/// apart from "the server rejected this."
+class NetworkException extends ApiException {
+  NetworkException([super.message = 'Could not reach the server. Check your connection.']);
+}
+
 class ApiClient {
   static const _baseUrlPrefsKey = 'focusflow_base_url';
   static const _cookiePrefsKey = 'focusflow_cookie';
+  static const _timeout = Duration(seconds: 8);
 
   String baseUrl = '';
   String? _cookie;
@@ -31,6 +40,8 @@ class ApiClient {
   }
 
   bool get hasBaseUrl => baseUrl.trim().isNotEmpty;
+
+  bool get hasSession => _cookie != null;
 
   Future<void> setBaseUrl(String url) async {
     baseUrl = url.trim();
@@ -73,16 +84,20 @@ class ApiClient {
     try {
       switch (method) {
         case 'GET':
-          res = await _client.get(uri, headers: headers);
+          res = await _client.get(uri, headers: headers).timeout(_timeout);
           break;
         case 'POST':
-          res = await _client.post(uri, headers: headers, body: body == null ? null : jsonEncode(body));
+          res = await _client
+              .post(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .timeout(_timeout);
           break;
         case 'PATCH':
-          res = await _client.patch(uri, headers: headers, body: body == null ? null : jsonEncode(body));
+          res = await _client
+              .patch(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .timeout(_timeout);
           break;
         case 'DELETE':
-          res = await _client.delete(uri, headers: headers);
+          res = await _client.delete(uri, headers: headers).timeout(_timeout);
           break;
         default:
           throw ApiException('Unsupported method $method');
@@ -90,7 +105,9 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('Could not reach server at $baseUrl. Check the address and your connection.');
+      // Covers unreachable hosts, DNS failures, and the timeout above — any
+      // case where we never got a response back from the server at all.
+      throw NetworkException('Could not reach server at $baseUrl. Check the address and your connection.');
     }
 
     final setCookie = res.headers['set-cookie'];
@@ -140,7 +157,8 @@ class ApiClient {
     return data.map((e) => Dimension.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<void> createDimension(String name) => _request('POST', '/dimensions', body: {'name': name});
+  Future<Map<String, dynamic>> createDimension(String name) =>
+      _request('POST', '/dimensions', body: {'name': name}).then((r) => r as Map<String, dynamic>);
 
   Future<void> updateDimension(int id, String name) =>
       _request('PATCH', '/dimensions/$id', body: {'name': name});
@@ -154,7 +172,7 @@ class ApiClient {
     return data.map((e) => Task.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<void> createTask({
+  Future<Map<String, dynamic>> createTask({
     required String title,
     required String description,
     required int? dimensionId,
@@ -162,7 +180,7 @@ class ApiClient {
     'POST',
     '/tasks',
     body: {'title': title, 'description': description, 'dimension_id': dimensionId},
-  );
+  ).then((r) => r as Map<String, dynamic>);
 
   Future<void> updateTaskStatus(int id, TaskStatus status) =>
       _request('PATCH', '/tasks/$id', body: {'status': status.name});
