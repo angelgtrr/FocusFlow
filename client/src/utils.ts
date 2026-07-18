@@ -1,4 +1,4 @@
-import type { DayNote, Dimension, Entry, Task, TaskCompletion } from './types';
+import type { DayNote, Dimension, Entry, RecurringType, Task, TaskCompletion } from './types';
 
 export function toDateKey(date: Date): string {
   const y = date.getFullYear();
@@ -60,6 +60,28 @@ export function buildMonthGrid(monthDate: Date): MonthGridDay[] {
     cursor.setDate(cursor.getDate() + 1);
   }
   return days;
+}
+
+export interface DateOccurrence {
+  occurrenceKey: string;
+  daysUntil: number;
+}
+
+export function nextOccurrence(dateKey: string, recurring: RecurringType): DateOccurrence {
+  const today = keyToDate(todayKey());
+  const original = keyToDate(dateKey);
+
+  if (recurring === 'none') {
+    const daysUntil = Math.round((original.getTime() - today.getTime()) / 86400000);
+    return { occurrenceKey: dateKey, daysUntil };
+  }
+
+  let occurrence = new Date(today.getFullYear(), original.getMonth(), original.getDate());
+  if (occurrence < today) {
+    occurrence = new Date(today.getFullYear() + 1, original.getMonth(), original.getDate());
+  }
+  const daysUntil = Math.round((occurrence.getTime() - today.getTime()) / 86400000);
+  return { occurrenceKey: toDateKey(occurrence), daysUntil };
 }
 
 export function activeDateKeys(

@@ -64,6 +64,29 @@ String formatDayHeading(String dateKey) {
   return '$weekday, $month ${date.day}${includeYear ? ', ${date.year}' : ''}';
 }
 
+class DateOccurrence {
+  final String occurrenceKey;
+  final int daysUntil;
+  DateOccurrence({required this.occurrenceKey, required this.daysUntil});
+}
+
+DateOccurrence nextOccurrence(String dateKey, String recurring) {
+  final today = startOfDay(DateTime.now());
+  final original = keyToDate(dateKey);
+
+  if (recurring != 'yearly') {
+    final daysUntil = original.difference(today).inDays;
+    return DateOccurrence(occurrenceKey: dateKey, daysUntil: daysUntil);
+  }
+
+  var occurrence = DateTime(today.year, original.month, original.day);
+  if (occurrence.isBefore(today)) {
+    occurrence = DateTime(today.year + 1, original.month, original.day);
+  }
+  final daysUntil = occurrence.difference(today).inDays;
+  return DateOccurrence(occurrenceKey: toDateKey(occurrence), daysUntil: daysUntil);
+}
+
 class MonthGridDay {
   final String key;
   final DateTime date;

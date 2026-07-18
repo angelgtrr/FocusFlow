@@ -1,4 +1,4 @@
-import type { DayNote, Dimension, Entry, Task, TaskCompletion, TaskStatus } from './types';
+import type { DayNote, Dimension, Entry, RecurringType, SavedDate, Task, TaskCompletion, TaskStatus } from './types';
 
 export class UnauthorizedError extends Error {}
 
@@ -63,6 +63,13 @@ export const api = {
 
   saveDayNote: (date: string, note: string) =>
     request<DayNote>('/day-notes', { method: 'POST', body: JSON.stringify({ date, note }) }),
+
+  getDates: () => request<SavedDate[]>('/dates'),
+
+  createDate: (data: { title: string; note: string; date: string; recurring: RecurringType }) =>
+    request<SavedDate>('/dates', { method: 'POST', body: JSON.stringify(data) }),
+
+  deleteDate: (id: number) => request<void>(`/dates/${id}`, { method: 'DELETE' }),
 
   getPushPublicKey: () => request<{ publicKey: string | null }>('/push/public-key'),
 

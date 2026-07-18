@@ -1,8 +1,8 @@
 import NotificationToggle from './NotificationToggle';
 
 interface HeaderProps {
-  tab: 'daily' | 'dimensions' | 'tasks';
-  onTabChange: (tab: 'daily' | 'dimensions' | 'tasks') => void;
+  tab: 'daily' | 'dimensions' | 'tasks' | 'dates';
+  onTabChange: (tab: 'daily' | 'dimensions' | 'tasks' | 'dates') => void;
   onLogout: () => void;
 }
 
@@ -66,6 +66,16 @@ export default function Header({ tab, onTabChange, onLogout }: HeaderProps) {
             }`}
           >
             Tasks
+          </button>
+          <button
+            onClick={() => onTabChange('dates')}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+              tab === 'dates'
+                ? 'border-violet-500 text-violet-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Dates
           </button>
         </nav>
       </div>

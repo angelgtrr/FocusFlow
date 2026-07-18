@@ -3,35 +3,39 @@ import Header from './components/Header';
 import DailyPage from './pages/DailyPage';
 import DimensionsPage from './pages/DimensionsPage';
 import TasksPage from './pages/TasksPage';
+import DatesPage from './pages/DatesPage';
 import LoginPage from './pages/LoginPage';
 import { api, UnauthorizedError } from './api';
-import type { DayNote, Dimension, Entry, Task, TaskCompletion, TaskStatus } from './types';
+import type { DayNote, Dimension, Entry, RecurringType, SavedDate, Task, TaskCompletion, TaskStatus } from './types';
 
 export default function App() {
-  const [tab, setTab] = useState<'daily' | 'dimensions' | 'tasks'>('daily');
+  const [tab, setTab] = useState<'daily' | 'dimensions' | 'tasks' | 'dates'>('daily');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
   const [taskCompletions, setTaskCompletions] = useState<TaskCompletion[]>([]);
   const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
+  const [dates, setDates] = useState<SavedDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authed, setAuthed] = useState(false);
 
   async function refresh() {
     try {
-      const [tasksData, entriesData, dimensionsData, taskCompletionsData, dayNotesData] = await Promise.all([
+      const [tasksData, entriesData, dimensionsData, taskCompletionsData, dayNotesData, datesData] = await Promise.all([
         api.getTasks(),
         api.getEntries(),
         api.getDimensions(),
         api.getTaskCompletions(),
         api.getDayNotes(),
+        api.getDates(),
       ]);
       setTasks(tasksData);
       setEntries(entriesData);
       setDimensions(dimensionsData);
       setTaskCompletions(taskCompletionsData);
       setDayNotes(dayNotesData);
+      setDates(datesData);
     } catch (e) {
       if (e instanceof UnauthorizedError) {
         setAuthed(false);
@@ -72,6 +76,7 @@ export default function App() {
     setDimensions([]);
     setTaskCompletions([]);
     setDayNotes([]);
+    setDates([]);
   }
 
   async function handleLogEntry(data: { dimension_id: number; date: string; score: number; note: string }) {
@@ -120,6 +125,16 @@ export default function App() {
 
   async function handleDeleteDimension(id: number) {
     await api.deleteDimension(id);
+    await refresh();
+  }
+
+  async function handleCreateDate(data: { title: string; note: string; date: string; recurring: RecurringType }) {
+    await api.createDate(data);
+    await refresh();
+  }
+
+  async function handleDeleteDate(id: number) {
+    await api.deleteDate(id);
     await refresh();
   }
 
@@ -175,6 +190,9 @@ export default function App() {
           onStatusChange={handleStatusChange}
           onDeleteTask={handleDeleteTask}
         />
+      )}
+      {tab === 'dates' && (
+        <DatesPage dates={dates} onCreate={handleCreateDate} onDelete={handleDeleteDate} />
       )}
     </div>
   );

@@ -42,6 +42,18 @@ export interface DayNote {
   updated_at: string;
 }
 
+export type RecurringType = 'none' | 'yearly';
+
+export interface SavedDate {
+  id: number;
+  title: string;
+  note: string;
+  date: string; // YYYY-MM-DD
+  recurring: RecurringType;
+  created_at: string;
+  updated_at: string;
+}
+
 export const SCORE_LABELS: Record<number, string> = {
   0: 'No progress',
   1: 'Low effort',

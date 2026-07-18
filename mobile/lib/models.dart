@@ -127,6 +127,46 @@ class DayNote {
   };
 }
 
+class SavedDate {
+  final int id;
+  final String title;
+  final String note;
+  final String date; // YYYY-MM-DD
+  final String recurring; // 'none' | 'yearly'
+  final String createdAt;
+  final String updatedAt;
+
+  SavedDate({
+    required this.id,
+    required this.title,
+    required this.note,
+    required this.date,
+    required this.recurring,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory SavedDate.fromJson(Map<String, dynamic> json) => SavedDate(
+    id: json['id'] as int,
+    title: json['title'] as String,
+    note: (json['note'] as String?) ?? '',
+    date: json['date'] as String,
+    recurring: (json['recurring'] as String?) ?? 'none',
+    createdAt: json['created_at'] as String,
+    updatedAt: json['updated_at'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'note': note,
+    'date': date,
+    'recurring': recurring,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+  };
+}
+
 class TaskCompletion {
   final int id;
   final int taskId;

@@ -230,4 +230,24 @@ class ApiClient {
 
   Future<void> saveDayNote(String date, String note) =>
       _request('POST', '/day-notes', body: {'date': date, 'note': note});
+
+  // --- Dates ---
+
+  Future<List<SavedDate>> getDates() async {
+    final data = await _request('GET', '/dates') as List;
+    return data.map((e) => SavedDate.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Map<String, dynamic>> createDate({
+    required String title,
+    required String note,
+    required String date,
+    required String recurring,
+  }) => _request(
+    'POST',
+    '/dates',
+    body: {'title': title, 'note': note, 'date': date, 'recurring': recurring},
+  ).then((r) => r as Map<String, dynamic>);
+
+  Future<void> deleteDate(int id) => _request('DELETE', '/dates/$id');
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import 'daily_page.dart';
+import 'dates_page.dart';
 import 'dimensions_page.dart';
 import 'tasks_page.dart';
 
@@ -26,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = widget.appState;
-    final titles = ['Daily', 'Dimensions', 'Tasks'];
+    final titles = ['Daily', 'Dimensions', 'Tasks', 'Dates'];
 
     return Scaffold(
       appBar: AppBar(
@@ -60,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       DailyPage(appState: appState),
                       DimensionsPage(appState: appState),
                       TasksPage(appState: appState),
+                      DatesPage(appState: appState),
                     ],
                   ),
           ),
@@ -79,6 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.checklist_outlined),
             selectedIcon: Icon(Icons.checklist),
             label: 'Tasks',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.event_outlined),
+            selectedIcon: Icon(Icons.event),
+            label: 'Dates',
           ),
         ],
       ),

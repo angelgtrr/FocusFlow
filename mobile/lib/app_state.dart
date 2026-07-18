@@ -26,6 +26,7 @@ class AppState extends ChangeNotifier {
   List<Entry> entries = [];
   List<TaskCompletion> taskCompletions = [];
   List<DayNote> dayNotes = [];
+  List<SavedDate> dates = [];
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _flushing = false;
@@ -69,6 +70,7 @@ class AppState extends ChangeNotifier {
     entries = (await localDb.getAll(LocalDb.entry)).map(Entry.fromJson).toList();
     taskCompletions = (await localDb.getAll(LocalDb.taskCompletion)).map(TaskCompletion.fromJson).toList();
     dayNotes = (await localDb.getAll(LocalDb.dayNote)).map(DayNote.fromJson).toList();
+    dates = (await localDb.getAll(LocalDb.savedDate)).map(SavedDate.fromJson).toList();
   }
 
   Future<void> setBaseUrl(String url) async {
@@ -95,6 +97,7 @@ class AppState extends ChangeNotifier {
     entries = [];
     taskCompletions = [];
     dayNotes = [];
+    dates = [];
     if (Platform.isAndroid) await hideProgressNotification();
     notifyListeners();
   }
@@ -112,18 +115,21 @@ class AppState extends ChangeNotifier {
         api.getDimensions(),
         api.getTaskCompletions(),
         api.getDayNotes(),
+        api.getDates(),
       ]);
       tasks = results[0] as List<Task>;
       entries = results[1] as List<Entry>;
       dimensions = results[2] as List<Dimension>;
       taskCompletions = results[3] as List<TaskCompletion>;
       dayNotes = results[4] as List<DayNote>;
+      dates = results[5] as List<SavedDate>;
       await Future.wait([
         localDb.replaceAll(LocalDb.task, tasks.map((t) => t.toJson()).toList(), idField: 'id'),
         localDb.replaceAll(LocalDb.entry, entries.map((e) => e.toJson()).toList(), idField: 'id'),
         localDb.replaceAll(LocalDb.dimension, dimensions.map((d) => d.toJson()).toList(), idField: 'id'),
         localDb.replaceAll(LocalDb.taskCompletion, taskCompletions.map((c) => c.toJson()).toList(), idField: 'id'),
         localDb.replaceAll(LocalDb.dayNote, dayNotes.map((n) => n.toJson()).toList(), idField: 'date'),
+        localDb.replaceAll(LocalDb.savedDate, dates.map((d) => d.toJson()).toList(), idField: 'id'),
       ]);
       offline = false;
       error = null;
@@ -238,6 +244,18 @@ class AppState extends ChangeNotifier {
         break;
       case 'saveDayNote':
         await api.saveDayNote(p['date'] as String, p['note'] as String);
+        break;
+      case 'createDate':
+        final server = await api.createDate(
+          title: p['title'] as String,
+          note: p['note'] as String,
+          date: p['date'] as String,
+          recurring: p['recurring'] as String,
+        );
+        await localDb.remapId(LocalDb.savedDate, p['temp_id'] as int, server['id'] as int);
+        break;
+      case 'deleteDate':
+        await api.deleteDate(p['target_id'] as int);
         break;
     }
   }
@@ -490,6 +508,44 @@ class AppState extends ChangeNotifier {
     dayNotes = idx >= 0 ? ([...dayNotes]..[idx] = updated) : [...dayNotes, updated];
     await localDb.put(LocalDb.dayNote, date, updated.toJson());
     await localDb.enqueueOp('saveDayNote', {'date': date, 'note': note});
+    pendingOpsCount = await localDb.queueLength();
+    notifyListeners();
+    unawaited(_trySync());
+  }
+
+  Future<void> createDate({
+    required String title,
+    required String note,
+    required String date,
+    required bool recurringYearly,
+  }) async {
+    final tempId = LocalDb.tempId();
+    final now = DateTime.now().toIso8601String();
+    final recurring = recurringYearly ? 'yearly' : 'none';
+    final savedDate = SavedDate(
+      id: tempId,
+      title: title,
+      note: note,
+      date: date,
+      recurring: recurring,
+      createdAt: now,
+      updatedAt: now,
+    );
+    dates = [...dates, savedDate];
+    await localDb.put(LocalDb.savedDate, tempId, savedDate.toJson());
+    await localDb.enqueueOp(
+      'createDate',
+      {'temp_id': tempId, 'title': title, 'note': note, 'date': date, 'recurring': recurring},
+    );
+    pendingOpsCount = await localDb.queueLength();
+    notifyListeners();
+    unawaited(_trySync());
+  }
+
+  Future<void> deleteDate(int id) async {
+    dates = dates.where((d) => d.id != id).toList();
+    await localDb.remove(LocalDb.savedDate, id);
+    await localDb.enqueueOp('deleteDate', {'target_id': id});
     pendingOpsCount = await localDb.queueLength();
     notifyListeners();
     unawaited(_trySync());
