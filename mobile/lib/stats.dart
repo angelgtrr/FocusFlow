@@ -104,6 +104,13 @@ List<DimensionProgress> buildDimensionProgress(List<Dimension> dimensions, List<
   return dimensions.map((d) => DimensionProgress(dimension: d, entry: byDim[d.id])).toList();
 }
 
+int todayProgressPct(List<DimensionProgress> progress) {
+  if (progress.isEmpty) return 0;
+  final achieved = progress.fold<int>(0, (sum, p) => sum + (p.entry?.score ?? 0));
+  final possible = progress.length * 4;
+  return ((achieved / possible) * 100).round();
+}
+
 Set<int> completedTaskIdsForDate(List<TaskCompletion> completions, String date) {
   return completions.where((c) => c.date == date).map((c) => c.taskId).toSet();
 }

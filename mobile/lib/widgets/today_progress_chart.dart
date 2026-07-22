@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../models.dart';
 import '../stats.dart';
 import '../theme.dart';
 
-/// Bar chart of today's score per dimension (0-4), mirroring the
-/// "graph bars with current day's progress" requirement.
+/// Horizontal bar chart of today's score per dimension (0-4), sorted
+/// greatest to lowest. Tapping a row opens that dimension's 30-day trend.
 class TodayProgressChart extends StatelessWidget {
   final List<DimensionProgress> progress;
-  static const double maxBarHeight = 96;
+  final ValueChanged<Dimension>? onSelectDimension;
 
-  const TodayProgressChart({super.key, required this.progress});
+  const TodayProgressChart({super.key, required this.progress, this.onSelectDimension});
 
   @override
   Widget build(BuildContext context) {
@@ -20,52 +21,71 @@ class TodayProgressChart extends StatelessWidget {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (final p in progress)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+    final sorted = [...progress]
+      ..sort((a, b) => (b.entry?.score ?? 0).compareTo(a.entry?.score ?? 0));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final p in sorted)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: onSelectDimension == null ? null : () => onSelectDimension!(p.dimension),
+              child: Row(
                 children: [
-                  Text(
-                    p.loggedToday ? '${p.entry!.score}' : '–',
-                    style: const TextStyle(
-                      color: AppColors.slate300,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: 28,
-                    height: p.loggedToday
-                        ? (maxBarHeight * (p.entry!.score / 4)).clamp(6, maxBarHeight)
-                        : 6,
-                    decoration: BoxDecoration(
-                      color: p.loggedToday ? scoreColors[p.entry!.score] : AppColors.slate800,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
                   SizedBox(
-                    width: 56,
+                    width: 84,
                     child: Text(
                       p.dimension.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: dimensionColor(p.dimension.name), fontSize: 11),
+                      style: TextStyle(color: dimensionColor(p.dimension.name), fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Container(
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: AppColors.slate800,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: p.loggedToday ? (p.entry!.score / 4).clamp(0.0, 1.0) : 0,
+                          child: Container(
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: p.loggedToday ? scoreColors[p.entry!.score] : AppColors.slate800,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 20,
+                    child: Text(
+                      p.loggedToday ? '${p.entry!.score}' : '–',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: AppColors.slate300,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

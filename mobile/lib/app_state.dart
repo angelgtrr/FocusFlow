@@ -254,6 +254,15 @@ class AppState extends ChangeNotifier {
         );
         await localDb.remapId(LocalDb.savedDate, p['temp_id'] as int, server['id'] as int);
         break;
+      case 'updateDate':
+        await api.updateDate(
+          p['target_id'] as int,
+          title: p['title'] as String,
+          note: p['note'] as String,
+          date: p['date'] as String,
+          recurring: p['recurring'] as String,
+        );
+        break;
       case 'deleteDate':
         await api.deleteDate(p['target_id'] as int);
         break;
@@ -536,6 +545,38 @@ class AppState extends ChangeNotifier {
     await localDb.enqueueOp(
       'createDate',
       {'temp_id': tempId, 'title': title, 'note': note, 'date': date, 'recurring': recurring},
+    );
+    pendingOpsCount = await localDb.queueLength();
+    notifyListeners();
+    unawaited(_trySync());
+  }
+
+  Future<void> updateDate(
+    int id, {
+    required String title,
+    required String note,
+    required String date,
+    required bool recurringYearly,
+  }) async {
+    final recurring = recurringYearly ? 'yearly' : 'none';
+    final idx = dates.indexWhere((d) => d.id == id);
+    if (idx >= 0) {
+      final old = dates[idx];
+      final updated = SavedDate(
+        id: id,
+        title: title,
+        note: note,
+        date: date,
+        recurring: recurring,
+        createdAt: old.createdAt,
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+      dates = [...dates]..[idx] = updated;
+      await localDb.put(LocalDb.savedDate, id, updated.toJson());
+    }
+    await localDb.enqueueOp(
+      'updateDate',
+      {'target_id': id, 'title': title, 'note': note, 'date': date, 'recurring': recurring},
     );
     pendingOpsCount = await localDb.queueLength();
     notifyListeners();

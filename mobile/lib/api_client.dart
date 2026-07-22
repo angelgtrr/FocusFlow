@@ -249,5 +249,17 @@ class ApiClient {
     body: {'title': title, 'note': note, 'date': date, 'recurring': recurring},
   ).then((r) => r as Map<String, dynamic>);
 
+  Future<void> updateDate(
+    int id, {
+    required String title,
+    required String note,
+    required String date,
+    required String recurring,
+  }) => _request(
+    'PATCH',
+    '/dates/$id',
+    body: {'title': title, 'note': note, 'date': date, 'recurring': recurring},
+  );
+
   Future<void> deleteDate(int id) => _request('DELETE', '/dates/$id');
 }

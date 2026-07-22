@@ -69,6 +69,11 @@ export const api = {
   createDate: (data: { title: string; note: string; date: string; recurring: RecurringType }) =>
     request<SavedDate>('/dates', { method: 'POST', body: JSON.stringify(data) }),
 
+  updateDate: (
+    id: number,
+    data: Partial<{ title: string; note: string; date: string; recurring: RecurringType }>
+  ) => request<SavedDate>(`/dates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
   deleteDate: (id: number) => request<void>(`/dates/${id}`, { method: 'DELETE' }),
 
   getPushPublicKey: () => request<{ publicKey: string | null }>('/push/public-key'),

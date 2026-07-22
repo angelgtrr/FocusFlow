@@ -7,7 +7,10 @@ import TrendChart from '../components/TrendChart';
 import TaskChecklist from '../components/TaskChecklist';
 import LogEntryModal from '../components/LogEntryModal';
 import MonthCalendar from '../components/MonthCalendar';
+import TodayProgressChart from '../components/TodayProgressChart';
+import HourglassProgress from '../components/HourglassProgress';
 import DayNoteEditor from '../components/DayNoteEditor';
+import DimensionTrendPage from './DimensionTrendPage';
 import { SCORE_COLORS, dimensionColor } from '../constants';
 import {
   activeDateKeys,
@@ -21,8 +24,10 @@ import {
   keyToDate,
   toDateKey,
   todayKey,
+  todayProgressPct,
   weeklyProgressPct,
 } from '../utils';
+import type { DimensionProgress } from '../utils';
 
 interface DailyPageProps {
   tasks: Task[];
@@ -47,6 +52,7 @@ export default function DailyPage({
 }: DailyPageProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editDimensionId, setEditDimensionId] = useState<number | null>(null);
+  const [trendDimension, setTrendDimension] = useState<Dimension | null>(null);
   const [dimensionFilter, setDimensionFilter] = useState<number | 'all'>('all');
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -84,6 +90,16 @@ export default function DailyPage({
     [dimensions, allTodaysEntries]
   );
 
+  const pendingDimensionProgress = useMemo(
+    () => dimensionProgress.filter((row) => row.entry?.score !== 4),
+    [dimensionProgress]
+  );
+
+  const doneDimensionProgress = useMemo(
+    () => dimensionProgress.filter((row) => row.entry?.score === 4),
+    [dimensionProgress]
+  );
+
   const completedTaskIds = useMemo(
     () => completedTaskIdsForDate(taskCompletions, selectedDate),
     [taskCompletions, selectedDate]
@@ -110,8 +126,35 @@ export default function DailyPage({
     [dayNotes, selectedDate]
   );
 
+  if (trendDimension) {
+    return (
+      <DimensionTrendPage
+        dimension={trendDimension}
+        entries={entries}
+        onBack={() => setTrendDimension(null)}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 space-y-8">
+      <StatsBar
+        dimensionCount={filteredDimensions.length}
+        weeklyProgressPct={weeklyProgressPct(filteredEntries, filteredDimensions)}
+        todayProgressPct={todayProgressPct(dimensionProgress)}
+        streak={currentStreak(filteredEntries)}
+        tasksDoneToday={tasksDoneToday}
+        tasksDoneLabel={isToday ? 'Tasks Done Today' : 'Tasks Done'}
+      />
+
+      <section className="flex justify-center rounded-xl border border-slate-800 bg-slate-900/60 py-4">
+        <HourglassProgress
+          onDayRollover={(previousDateKey, newDateKey) =>
+            setSelectedDate((current) => (current === previousDateKey ? newDateKey : current))
+          }
+        />
+      </section>
+
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
@@ -159,70 +202,51 @@ export default function DailyPage({
       </section>
 
       <section>
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Dimensions
-          </h2>
-          <button
-            onClick={() => {
-              setEditDimensionId(null);
-              setModalOpen(true);
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 text-xl leading-none text-white shadow-lg hover:bg-violet-500"
-            aria-label="Log new entry"
-          >
-            +
-          </button>
-        </div>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          Dimensions
+        </h2>
         {dimensionProgress.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">
             No dimensions yet. Head to the Dimensions tab to add one.
           </p>
         ) : (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {dimensionProgress.map((row) => (
-              <div
-                key={row.dimension.id}
-                className="rounded-xl border border-slate-800 bg-slate-900/60 p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <span className={`rounded-full border px-2 py-0.5 text-xs ${dimensionColor(row.dimension.name)}`}>
-                      {row.dimension.name}
-                    </span>
-                    <button
-                      onClick={() => {
+          <>
+            <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Pending
+            </h3>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {pendingDimensionProgress.map((row) => (
+                <DimensionCard
+                  key={row.dimension.id}
+                  row={row}
+                  onEdit={() => {
+                    setEditDimensionId(row.dimension.id);
+                    setModalOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+
+            {doneDimensionProgress.length > 0 && (
+              <>
+                <h3 className="mt-6 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Done
+                </h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {doneDimensionProgress.map((row) => (
+                    <DimensionCard
+                      key={row.dimension.id}
+                      row={row}
+                      onEdit={() => {
                         setEditDimensionId(row.dimension.id);
                         setModalOpen(true);
                       }}
-                      className="text-slate-500 hover:text-slate-300"
-                      aria-label={`Log progress for ${row.dimension.name}`}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-3.5 w-3.5"
-                      >
-                        <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-8.5 8.5a2 2 0 0 1-.878.507l-3.06.875a.5.5 0 0 1-.618-.618l.875-3.06a2 2 0 0 1 .507-.878l8.5-8.5Z" />
-                      </svg>
-                    </button>
-                  </span>
-                  {row.loggedToday && row.entry ? (
-                    <span className="flex items-center gap-1.5 text-sm text-slate-300">
-                      <span className={`h-2.5 w-2.5 rounded-full ${SCORE_COLORS[row.entry.score]}`} />
-                      {SCORE_LABELS[row.entry.score]}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-slate-500">Not logged</span>
-                  )}
+                    />
+                  ))}
                 </div>
-                {row.loggedToday && row.entry?.note && (
-                  <p className="mt-2 text-sm text-slate-400">{row.entry.note}</p>
-                )}
-              </div>
-            ))}
-          </div>
+              </>
+            )}
+          </>
         )}
       </section>
 
@@ -264,14 +288,6 @@ export default function DailyPage({
         </select>
       </div>
 
-      <StatsBar
-        dimensionCount={filteredDimensions.length}
-        weeklyProgressPct={weeklyProgressPct(filteredEntries, filteredDimensions)}
-        streak={currentStreak(filteredEntries)}
-        tasksDoneToday={tasksDoneToday}
-        tasksDoneLabel={isToday ? 'Tasks Done Today' : 'Tasks Done'}
-      />
-
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
           Consistency
@@ -287,6 +303,15 @@ export default function DailyPage({
         </h2>
         <div className="mt-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
           <TrendChart data={trendData} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          Today's progress
+        </h2>
+        <div className="mt-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+          <TodayProgressChart progress={dimensionProgress} onSelectDimension={setTrendDimension} />
         </div>
       </section>
 
@@ -311,6 +336,45 @@ export default function DailyPage({
           }}
           onSubmit={onLogEntry}
         />
+      )}
+    </div>
+  );
+}
+
+function DimensionCard({ row, onEdit }: { row: DimensionProgress; onEdit: () => void }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5">
+          <span className={`rounded-full border px-2 py-0.5 text-xs ${dimensionColor(row.dimension.name)}`}>
+            {row.dimension.name}
+          </span>
+          <button
+            onClick={onEdit}
+            className="text-slate-500 hover:text-slate-300"
+            aria-label={`Log progress for ${row.dimension.name}`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-3.5 w-3.5"
+            >
+              <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-8.5 8.5a2 2 0 0 1-.878.507l-3.06.875a.5.5 0 0 1-.618-.618l.875-3.06a2 2 0 0 1 .507-.878l8.5-8.5Z" />
+            </svg>
+          </button>
+        </span>
+        {row.loggedToday && row.entry ? (
+          <span className="flex items-center gap-1.5 text-sm text-slate-300">
+            <span className={`h-2.5 w-2.5 rounded-full ${SCORE_COLORS[row.entry.score]}`} />
+            {SCORE_LABELS[row.entry.score]}
+          </span>
+        ) : (
+          <span className="text-sm text-slate-500">Not logged</span>
+        )}
+      </div>
+      {row.loggedToday && row.entry?.note && (
+        <p className="mt-2 whitespace-pre-line text-sm text-slate-400">{row.entry.note}</p>
       )}
     </div>
   );

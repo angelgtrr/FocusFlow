@@ -7,10 +7,12 @@ import '../stats.dart';
 import '../theme.dart';
 import '../widgets/day_note_editor.dart';
 import '../widgets/heatmap.dart';
+import '../widgets/hourglass_progress.dart';
 import '../widgets/log_entry_sheet.dart';
 import '../widgets/month_calendar.dart';
 import '../widgets/today_progress_chart.dart';
 import '../widgets/trend_chart.dart';
+import 'dimension_trend_page.dart';
 
 class DailyPage extends StatefulWidget {
   final AppState appState;
@@ -42,12 +44,15 @@ class _DailyPageState extends State<DailyPage> {
     final isToday = selectedDate == todayKey();
     final selectedEntries = appState.entries.where((e) => e.date == selectedDate).toList();
     final dimensionProgress = buildDimensionProgress(appState.dimensions, selectedEntries);
+    final pendingProgress = dimensionProgress.where((p) => p.entry?.score != 4).toList();
+    final doneProgress = dimensionProgress.where((p) => p.entry?.score == 4).toList();
     final activeTasks = appState.tasks.where((t) => t.status == TaskStatus.active).toList();
     final completedIds = completedTaskIdsForDate(appState.taskCompletions, selectedDate);
     final heatmapDays = buildHeatmap(appState.entries);
     final trendData = buildTrend(appState.entries);
     final streak = currentStreak(appState.entries);
     final weeklyPct = weeklyProgressPct(appState.entries, appState.dimensions);
+    final todayPct = todayProgressPct(dimensionProgress);
     final activeDates = activeDateKeys(appState.entries, appState.taskCompletions, appState.dayNotes);
     final matchingDayNotes = appState.dayNotes.where((n) => n.date == selectedDate);
     final selectedDayNote = matchingDayNotes.isEmpty ? '' : matchingDayNotes.first.note;
@@ -111,6 +116,8 @@ class _DailyPageState extends State<DailyPage> {
               const SizedBox(width: 8),
               Expanded(child: _StatChip(label: 'This week', value: '$weeklyPct%')),
               const SizedBox(width: 8),
+              Expanded(child: _StatChip(label: 'Today', value: '$todayPct%')),
+              const SizedBox(width: 8),
               Expanded(
                 child: _StatChip(
                   label: 'Tasks',
@@ -120,31 +127,29 @@ class _DailyPageState extends State<DailyPage> {
             ],
           ),
 
-          const SizedBox(height: 24),
-          Text('Today\'s progress', style: _sectionTitle),
-          const SizedBox(height: 12),
-          _Card(child: TodayProgressChart(progress: dimensionProgress)),
+          const SizedBox(height: 16),
+          Center(
+            child: _Card(
+              child: HourglassProgress(
+                onDayRollover: (previousDateKey, newDateKey) {
+                  if (mounted) setState(() {});
+                },
+              ),
+            ),
+          ),
 
           const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Dimensions', style: _sectionTitle),
-              TextButton.icon(
-                onPressed: () => showLogEntrySheet(context: context, appState: appState, date: selectedDate),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Log'),
-              ),
-            ],
-          ),
+          Text('Dimensions', style: _sectionTitle),
           const SizedBox(height: 8),
           if (dimensionProgress.isEmpty)
             const Text(
               'No dimensions yet. Head to the Dimensions tab to add one.',
               style: TextStyle(color: AppColors.slate500, fontSize: 13),
             )
-          else
-            ...dimensionProgress.map(
+          else ...[
+            Text('PENDING', style: _subsectionTitle),
+            const SizedBox(height: 8),
+            ...pendingProgress.map(
               (p) => _DimensionProgressTile(
                 progress: p,
                 onTap: () => showLogEntrySheet(
@@ -155,6 +160,23 @@ class _DailyPageState extends State<DailyPage> {
                 ),
               ),
             ),
+            if (doneProgress.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text('DONE', style: _subsectionTitle),
+              const SizedBox(height: 8),
+              ...doneProgress.map(
+                (p) => _DimensionProgressTile(
+                  progress: p,
+                  onTap: () => showLogEntrySheet(
+                    context: context,
+                    appState: appState,
+                    date: selectedDate,
+                    initialDimensionId: p.dimension.id,
+                  ),
+                ),
+              ),
+            ],
+          ],
 
           const SizedBox(height: 24),
           Text('Day note', style: _sectionTitle),
@@ -191,6 +213,20 @@ class _DailyPageState extends State<DailyPage> {
           Text('30-day trend', style: _sectionTitle),
           const SizedBox(height: 12),
           _Card(child: TrendChart(data: trendData)),
+
+          const SizedBox(height: 24),
+          Text('Today\'s progress', style: _sectionTitle),
+          const SizedBox(height: 12),
+          _Card(
+            child: TodayProgressChart(
+              progress: dimensionProgress,
+              onSelectDimension: (dimension) => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DimensionTrendPage(dimension: dimension, entries: appState.entries),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -202,6 +238,13 @@ const _sectionTitle = TextStyle(
   fontSize: 12,
   fontWeight: FontWeight.w600,
   letterSpacing: 0.8,
+);
+
+const _subsectionTitle = TextStyle(
+  color: AppColors.slate500,
+  fontSize: 10,
+  fontWeight: FontWeight.w600,
+  letterSpacing: 0.5,
 );
 
 class _Card extends StatelessWidget {

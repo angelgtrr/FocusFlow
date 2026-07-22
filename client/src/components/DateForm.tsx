@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import type { RecurringType } from '../types';
+import type { RecurringType, SavedDate } from '../types';
 import { todayKey } from '../utils';
 
 interface DateFormProps {
+  initial?: SavedDate;
   onSubmit: (data: { title: string; note: string; date: string; recurring: RecurringType }) => Promise<void>;
+  onCancel?: () => void;
 }
 
-export default function DateForm({ onSubmit }: DateFormProps) {
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState(todayKey());
-  const [recurring, setRecurring] = useState(false);
-  const [note, setNote] = useState('');
+export default function DateForm({ initial, onSubmit, onCancel }: DateFormProps) {
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [date, setDate] = useState(initial?.date ?? todayKey());
+  const [recurring, setRecurring] = useState(initial?.recurring === 'yearly');
+  const [note, setNote] = useState(initial?.note ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,10 +35,14 @@ export default function DateForm({ onSubmit }: DateFormProps) {
         date,
         recurring: recurring ? 'yearly' : 'none',
       });
-      setTitle('');
-      setDate(todayKey());
-      setRecurring(false);
-      setNote('');
+      if (initial) {
+        onCancel?.();
+      } else {
+        setTitle('');
+        setDate(todayKey());
+        setRecurring(false);
+        setNote('');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
@@ -50,7 +56,7 @@ export default function DateForm({ onSubmit }: DateFormProps) {
       className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
     >
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-        New date
+        {initial ? 'Edit date' : 'New date'}
       </h2>
 
       <div>
@@ -96,13 +102,24 @@ export default function DateForm({ onSubmit }: DateFormProps) {
 
       {error && <p className="text-sm text-rose-400">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full rounded-lg bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
-      >
-        {submitting ? 'Adding...' : 'Add date'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-lg bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+        >
+          {submitting ? 'Saving...' : initial ? 'Save changes' : 'Add date'}
+        </button>
+        {initial && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

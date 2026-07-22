@@ -238,6 +238,13 @@ export function buildDimensionProgress(
   });
 }
 
+export function todayProgressPct(progress: DimensionProgress[]): number {
+  if (progress.length === 0) return 0;
+  const achieved = progress.reduce((sum, p) => sum + (p.entry?.score ?? 0), 0);
+  const possible = progress.length * 4;
+  return Math.round((achieved / possible) * 100);
+}
+
 export function completedTaskIdsForDate(completions: TaskCompletion[], date: string): Set<number> {
   return new Set(completions.filter((c) => c.date === date).map((c) => c.task_id));
 }

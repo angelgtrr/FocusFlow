@@ -133,6 +133,14 @@ export default function App() {
     await refresh();
   }
 
+  async function handleUpdateDate(
+    id: number,
+    data: { title: string; note: string; date: string; recurring: RecurringType }
+  ) {
+    await api.updateDate(id, data);
+    await refresh();
+  }
+
   async function handleDeleteDate(id: number) {
     await api.deleteDate(id);
     await refresh();
@@ -192,7 +200,7 @@ export default function App() {
         />
       )}
       {tab === 'dates' && (
-        <DatesPage dates={dates} onCreate={handleCreateDate} onDelete={handleDeleteDate} />
+        <DatesPage dates={dates} onCreate={handleCreateDate} onUpdate={handleUpdateDate} onDelete={handleDeleteDate} />
       )}
     </div>
   );

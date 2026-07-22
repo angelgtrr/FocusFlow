@@ -40,54 +40,62 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _SyncBanner(offline: appState.offline, pendingCount: appState.pendingOpsCount),
-          Expanded(
-            child: appState.error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        '${appState.error}',
-                        style: const TextStyle(color: AppColors.rose400),
-                        textAlign: TextAlign.center,
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
+          children: [
+            _SyncBanner(offline: appState.offline, pendingCount: appState.pendingOpsCount),
+            Expanded(
+              child: appState.error != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          '${appState.error}',
+                          style: const TextStyle(color: AppColors.rose400),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
+                    )
+                  : IndexedStack(
+                      index: _index,
+                      children: [
+                        DailyPage(appState: appState),
+                        DimensionsPage(appState: appState),
+                        TasksPage(appState: appState),
+                        DatesPage(appState: appState),
+                      ],
                     ),
-                  )
-                : IndexedStack(
-                    index: _index,
-                    children: [
-                      DailyPage(appState: appState),
-                      DimensionsPage(appState: appState),
-                      TasksPage(appState: appState),
-                      DatesPage(appState: appState),
-                    ],
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.today_outlined), selectedIcon: Icon(Icons.today), label: 'Daily'),
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dimensions',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.checklist_outlined),
-            selectedIcon: Icon(Icons.checklist),
-            label: 'Tasks',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.event_outlined),
-            selectedIcon: Icon(Icons.event),
-            label: 'Dates',
-          ),
-        ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        bottom: false,
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.today_outlined), selectedIcon: Icon(Icons.today), label: 'Daily'),
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Dimensions',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.checklist_outlined),
+              selectedIcon: Icon(Icons.checklist),
+              label: 'Tasks',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.event_outlined),
+              selectedIcon: Icon(Icons.event),
+              label: 'Dates',
+            ),
+          ],
+        ),
       ),
     );
   }

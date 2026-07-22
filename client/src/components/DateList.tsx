@@ -1,8 +1,11 @@
-import type { SavedDate } from '../types';
+import { useState } from 'react';
+import type { RecurringType, SavedDate } from '../types';
 import { keyToDate, nextOccurrence } from '../utils';
+import DateForm from './DateForm';
 
 interface DateListProps {
   dates: SavedDate[];
+  onUpdate: (id: number, data: { title: string; note: string; date: string; recurring: RecurringType }) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
 }
 
@@ -20,8 +23,30 @@ function formatOccurrence(occurrenceKey: string): string {
   return keyToDate(occurrenceKey).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function DateCard({ date, onDelete }: { date: SavedDate; onDelete: (id: number) => Promise<void> }) {
+function DateCard({
+  date,
+  onUpdate,
+  onDelete,
+}: {
+  date: SavedDate;
+  onUpdate: (id: number, data: { title: string; note: string; date: string; recurring: RecurringType }) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
   const { occurrenceKey, daysUntil } = nextOccurrence(date.date, date.recurring);
+
+  if (editing) {
+    return (
+      <li>
+        <DateForm
+          initial={date}
+          onSubmit={(data) => onUpdate(date.id, data)}
+          onCancel={() => setEditing(false)}
+        />
+      </li>
+    );
+  }
+
   return (
     <li className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -37,19 +62,28 @@ function DateCard({ date, onDelete }: { date: SavedDate; onDelete: (id: number) 
             {formatOccurrence(occurrenceKey)} · {formatDaysUntil(daysUntil)}
           </p>
         </div>
-        <button
-          onClick={() => onDelete(date.id)}
-          className="text-xs text-slate-500 hover:text-rose-400"
-          aria-label={`Delete ${date.title}`}
-        >
-          Delete
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs text-slate-500 hover:text-violet-400"
+            aria-label={`Edit ${date.title}`}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(date.id)}
+            className="text-xs text-slate-500 hover:text-rose-400"
+            aria-label={`Delete ${date.title}`}
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </li>
   );
 }
 
-export default function DateList({ dates, onDelete }: DateListProps) {
+export default function DateList({ dates, onUpdate, onDelete }: DateListProps) {
   if (dates.length === 0) {
     return <p className="text-sm text-slate-500">No dates saved yet. Add your first one.</p>;
   }
@@ -71,7 +105,7 @@ export default function DateList({ dates, onDelete }: DateListProps) {
         ) : (
           <ul className="space-y-2">
             {upcoming.map(({ date }) => (
-              <DateCard key={date.id} date={date} onDelete={onDelete} />
+              <DateCard key={date.id} date={date} onUpdate={onUpdate} onDelete={onDelete} />
             ))}
           </ul>
         )}
@@ -81,7 +115,7 @@ export default function DateList({ dates, onDelete }: DateListProps) {
           <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Past</h3>
           <ul className="space-y-2">
             {past.map(({ date }) => (
-              <DateCard key={date.id} date={date} onDelete={onDelete} />
+              <DateCard key={date.id} date={date} onUpdate={onUpdate} onDelete={onDelete} />
             ))}
           </ul>
         </div>

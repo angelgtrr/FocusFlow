@@ -32,8 +32,12 @@ Future<void> showProgressNotification({
   required int totalDimensions,
   required int currentScore,
   required int maxScore,
+  required List<String> doneDimensions,
+  required List<String> missingDimensions,
 }) async {
-  const androidDetails = AndroidNotificationDetails(
+  final body = '$dimensionsLogged/$totalDimensions dimensions · $currentScore/$maxScore points today';
+
+  final androidDetails = AndroidNotificationDetails(
     _channelId,
     'Daily progress',
     channelDescription: "Shows today's FocusFlow progress",
@@ -43,12 +47,20 @@ Future<void> showProgressNotification({
     autoCancel: false,
     onlyAlertOnce: true,
     showWhen: false,
+    styleInformation: BigTextStyleInformation(
+      [
+        if (doneDimensions.isNotEmpty) 'Done: ${doneDimensions.join(', ')}',
+        if (missingDimensions.isNotEmpty) 'Pending: ${missingDimensions.join(', ')}',
+      ].join('\n'),
+      contentTitle: 'FocusFlow',
+      summaryText: body,
+    ),
   );
   await _plugin.show(
     id: _notificationId,
     title: 'FocusFlow',
-    body: '$dimensionsLogged/$totalDimensions dimensions · $currentScore/$maxScore points today',
-    notificationDetails: const NotificationDetails(android: androidDetails),
+    body: body,
+    notificationDetails: NotificationDetails(android: androidDetails),
   );
 }
 
@@ -60,18 +72,19 @@ Future<void> updateProgressNotificationFrom({
 }) async {
   final today = todayKey();
   final todaysEntries = entries.where((e) => e.date == today).toList();
-  final dimensionsLogged = buildDimensionProgress(
-    dimensions,
-    todaysEntries,
-  ).where((d) => d.loggedToday).length;
+  final progress = buildDimensionProgress(dimensions, todaysEntries);
+  final doneDimensions = progress.where((d) => d.loggedToday).map((d) => d.dimension.name).toList();
+  final missingDimensions = progress.where((d) => !d.loggedToday).map((d) => d.dimension.name).toList();
 
   final currentScore = todaysEntries.fold<int>(0, (sum, e) => sum + e.score);
   final maxScore = dimensions.length * 4;
 
   await showProgressNotification(
-    dimensionsLogged: dimensionsLogged,
+    dimensionsLogged: doneDimensions.length,
     totalDimensions: dimensions.length,
     currentScore: currentScore,
     maxScore: maxScore,
+    doneDimensions: doneDimensions,
+    missingDimensions: missingDimensions,
   );
 }

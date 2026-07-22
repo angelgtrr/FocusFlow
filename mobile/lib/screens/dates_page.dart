@@ -68,6 +68,104 @@ class _DatesPageState extends State<DatesPage> {
     }
   }
 
+  Future<void> _edit(SavedDate d) async {
+    final titleController = TextEditingController(text: d.title);
+    final noteController = TextEditingController(text: d.note);
+    DateTime date = keyToDate(d.date);
+    bool recurringYearly = d.recurring == 'yearly';
+    String? error;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.slate900,
+          title: const Text('Edit date', style: TextStyle(color: AppColors.slate100)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleController,
+                  autofocus: true,
+                  style: const TextStyle(color: AppColors.slate100),
+                  decoration: const InputDecoration(hintText: 'Title'),
+                ),
+                const SizedBox(height: 10),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: date,
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setDialogState(() => date = picked);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.slate800,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.slate700),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.slate400),
+                        const SizedBox(width: 8),
+                        Text(toDateKey(date), style: const TextStyle(color: AppColors.slate100)),
+                      ],
+                    ),
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Repeats yearly', style: TextStyle(color: AppColors.slate200, fontSize: 14)),
+                  value: recurringYearly,
+                  onChanged: (v) => setDialogState(() => recurringYearly = v),
+                ),
+                TextField(
+                  controller: noteController,
+                  style: const TextStyle(color: AppColors.slate100),
+                  decoration: const InputDecoration(hintText: 'Optional note'),
+                  maxLines: 2,
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 6),
+                  Text(error!, style: const TextStyle(color: AppColors.rose400, fontSize: 13)),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) {
+                  setDialogState(() => error = 'Title is required.');
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved == true) {
+      await widget.appState.updateDate(
+        d.id,
+        title: titleController.text.trim(),
+        note: noteController.text.trim(),
+        date: toDateKey(date),
+        recurringYearly: recurringYearly,
+      );
+    }
+  }
+
   Future<void> _delete(SavedDate d) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -145,6 +243,11 @@ class _DatesPageState extends State<DatesPage> {
                   ),
                 ],
               ),
+            ),
+            IconButton(
+              onPressed: () => _edit(d),
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              color: AppColors.slate500,
             ),
             IconButton(
               onPressed: () => _delete(d),

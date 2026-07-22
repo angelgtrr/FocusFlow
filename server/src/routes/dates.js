@@ -25,6 +25,31 @@ router.post('/', (req, res) => {
   res.status(201).json(row);
 });
 
+router.patch('/:id', (req, res) => {
+  const existing = db.prepare('SELECT * FROM dates WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'date not found' });
+
+  const { title, note, date, recurring } = req.body;
+  if (title !== undefined && !title.trim()) {
+    return res.status(400).json({ error: 'title is required' });
+  }
+  if (recurring !== undefined && !['none', 'yearly'].includes(recurring)) {
+    return res.status(400).json({ error: 'invalid recurring value' });
+  }
+
+  db.prepare(
+    `UPDATE dates SET title = ?, note = ?, date = ?, recurring = ?, updated_at = datetime('now') WHERE id = ?`
+  ).run(
+    title !== undefined ? title.trim() : existing.title,
+    note !== undefined ? note.trim() : existing.note,
+    date ?? existing.date,
+    recurring ?? existing.recurring,
+    req.params.id
+  );
+
+  res.json(db.prepare('SELECT * FROM dates WHERE id = ?').get(req.params.id));
+});
+
 router.delete('/:id', (req, res) => {
   const result = db.prepare('DELETE FROM dates WHERE id = ?').run(req.params.id);
   if (result.changes === 0) {
