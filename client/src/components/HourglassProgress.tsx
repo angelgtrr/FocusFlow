@@ -80,8 +80,16 @@ export default function HourglassProgress({ onDayRollover }: HourglassProgressPr
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  const topSurfaceY = TOP + progress * (NECK - TOP);
-  const bottomSurfaceY = BOTTOM - progress * (BOTTOM - NECK);
+  // Each bulb is a triangle, so cross-section width — and therefore drawn
+  // area — scales with the square of the distance from the neck (apex).
+  // A surface that moves linearly with `progress` would drain area fast
+  // near the wide top and barely move near the narrow neck. To make the
+  // drawn area (i.e. the volume the eye reads) drain at a constant rate,
+  // the distance from the neck must scale with sqrt(1 - progress) instead.
+  const bulbHeight = NECK - TOP; // == BOTTOM - NECK, bulbs are congruent
+  const distanceFromNeck = bulbHeight * Math.sqrt(1 - progress);
+  const topSurfaceY = NECK - distanceFromNeck;
+  const bottomSurfaceY = NECK + distanceFromNeck;
   const streamBottom = Math.max(bottomSurfaceY, NECK - 2);
   const running = progress < 1 && streamBottom > NECK - 2;
 

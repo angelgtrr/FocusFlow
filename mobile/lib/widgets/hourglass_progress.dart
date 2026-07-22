@@ -123,8 +123,16 @@ class _HourglassPainter extends CustomPainter {
       ..lineTo(60, neck)
       ..close();
 
-    final topSurfaceY = top + progress * (neck - top);
-    final bottomSurfaceY = bottom - progress * (bottom - neck);
+    // Each bulb is a triangle, so cross-section width — and therefore drawn
+    // area — scales with the square of the distance from the neck (apex).
+    // A surface that moves linearly with `progress` would drain area fast
+    // near the wide top and barely move near the narrow neck. To make the
+    // drawn area (i.e. the volume the eye reads) drain at a constant rate,
+    // the distance from the neck must scale with sqrt(1 - progress) instead.
+    final bulbHeight = neck - top; // == bottom - neck, bulbs are congruent
+    final distanceFromNeck = bulbHeight * math.sqrt(1 - progress);
+    final topSurfaceY = neck - distanceFromNeck;
+    final bottomSurfaceY = neck + distanceFromNeck;
 
     final waterPaint = Paint()
       ..shader = const LinearGradient(
