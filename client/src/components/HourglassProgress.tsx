@@ -52,7 +52,7 @@ interface HourglassProgressProps {
 export default function HourglassProgress({ onDayRollover }: HourglassProgressProps) {
   const [progress, setProgress] = useState(computeProgress);
   const [phase, setPhase] = useState(0);
-  const [flipped, setFlipped] = useState(false);
+  const [spins, setSpins] = useState(0);
   const dateKeyRef = useRef(todayKey());
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function HourglassProgress({ onDayRollover }: HourglassProgressPr
       if (dateKey !== dateKeyRef.current) {
         const previousDateKey = dateKeyRef.current;
         dateKeyRef.current = dateKey;
-        setFlipped((f) => !f);
+        setSpins((s) => s + 1);
         onDayRollover?.(previousDateKey, dateKey);
       }
     }, 1000);
@@ -101,7 +101,7 @@ export default function HourglassProgress({ onDayRollover }: HourglassProgressPr
         role="img"
         aria-label="Progress through the day"
         style={{
-          transform: flipped ? 'rotate(180deg)' : 'rotate(0deg)',
+          transform: `rotate(${spins * 360}deg)`,
           transition: 'transform 1.1s cubic-bezier(0.65, 0, 0.35, 1)',
         }}
       >
