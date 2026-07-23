@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -19,8 +20,6 @@ Future<Directory> _backupsDir() async {
   return dir;
 }
 
-Future<String> backupsFolderPath() async => (await _backupsDir()).path;
-
 /// Copies the live local database into the backups folder with a timestamped
 /// name, then opens the native share sheet so it can also be saved to Drive,
 /// email, a Files app, etc.
@@ -35,14 +34,6 @@ Future<void> exportBackup(AppState appState) async {
   final exportPath = '${dir.path}/focusflow_backup_$timestamp.db';
   final exported = await dbFile.copy(exportPath);
   await SharePlus.instance.share(ShareParams(files: [XFile(exported.path)], text: 'FocusFlow backup'));
-}
-
-/// Backups available to restore, newest first.
-Future<List<File>> listBackups() async {
-  final dir = await _backupsDir();
-  final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.db')).toList();
-  files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
-  return files;
 }
 
 /// Replaces the current local database with [backupFile] and reloads
@@ -63,54 +54,18 @@ Future<void> exportBackupWithFeedback(BuildContext context, AppState appState) a
   }
 }
 
-Future<void> showImportBackupDialog(BuildContext context, AppState appState) async {
-  List<File> backups;
-  String folderPath;
+/// Opens the system "Open" picker so the user can grab a backup file from
+/// anywhere — Downloads, Drive, a Files app, wherever it landed — not just
+/// this app's own backups folder.
+Future<void> pickAndRestoreBackup(BuildContext context, AppState appState) async {
+  final XFile? picked;
   try {
-    backups = await listBackups();
-    folderPath = await backupsFolderPath();
+    picked = await openFile();
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not read backups: $e')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open file picker: $e')));
     return;
   }
-  if (!context.mounted) return;
-
-  if (backups.isEmpty) {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('No backups found'),
-        content: Text('Export a backup first, or copy a .db backup file into:\n\n$folderPath'),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
-      ),
-    );
-    return;
-  }
-
-  final picked = await showDialog<File>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Import backup'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: backups.length,
-          itemBuilder: (_, i) {
-            final f = backups[i];
-            final name = f.path.split(Platform.pathSeparator).last;
-            return ListTile(
-              title: Text(name),
-              subtitle: Text('${f.statSync().modified}'),
-              onTap: () => Navigator.pop(ctx, f),
-            );
-          },
-        ),
-      ),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel'))],
-    ),
-  );
   if (picked == null) return;
   if (!context.mounted) return;
 
@@ -119,8 +74,7 @@ Future<void> showImportBackupDialog(BuildContext context, AppState appState) asy
     builder: (ctx) => AlertDialog(
       title: const Text('Replace all data?'),
       content: Text(
-        'This replaces all current data on this device with '
-        '"${picked.path.split(Platform.pathSeparator).last}". This cannot be undone.',
+        'This replaces all current data on this device with "${picked!.name}". This cannot be undone.',
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -131,7 +85,7 @@ Future<void> showImportBackupDialog(BuildContext context, AppState appState) asy
   if (confirmed != true) return;
 
   try {
-    await restoreBackup(appState, picked);
+    await restoreBackup(appState, File(picked.path));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Backup imported.')));
   } catch (e) {

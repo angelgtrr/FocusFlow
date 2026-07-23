@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../backup.dart';
+import '../greeting.dart';
 import '../theme.dart';
 import 'daily_page.dart';
 import 'dates_page.dart';
@@ -20,6 +21,16 @@ class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.appState.userName.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) promptForName(context, widget.appState);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appState = widget.appState;
     final titles = ['Daily', 'Dimensions', 'Tasks', 'Dates'];
@@ -34,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Export backup',
           ),
           IconButton(
-            onPressed: () => showImportBackupDialog(context, appState),
+            onPressed: () => pickAndRestoreBackup(context, appState),
             icon: const Icon(Icons.download_outlined, size: 20),
             tooltip: 'Import backup',
           ),

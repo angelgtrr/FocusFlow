@@ -10,10 +10,10 @@ body {
 
 @keyframes hourglass-flow {
   to {
-    stroke-dashoffset: -16;
+    stroke-dashoffset: -74;
   }
 }
 
 .hourglass-stream {
-  animation: hourglass-flow 0.4s linear infinite;
+  animation: hourglass-flow 1s linear infinite;
 }

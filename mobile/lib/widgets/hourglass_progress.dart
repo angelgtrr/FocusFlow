@@ -20,8 +20,9 @@ class HourglassProgress extends StatefulWidget {
   State<HourglassProgress> createState() => _HourglassProgressState();
 }
 
-class _HourglassProgressState extends State<HourglassProgress> with SingleTickerProviderStateMixin {
+class _HourglassProgressState extends State<HourglassProgress> with TickerProviderStateMixin {
   late final AnimationController _flowController;
+  late final AnimationController _dropController;
   late double _progress;
   late String _dateKey;
   double _turns = 0;
@@ -33,6 +34,10 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
     _progress = hourglassDayProgress();
     _dateKey = todayKey();
     _flowController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
+    // Separate from _flowController (which drives the wave ripple) so the
+    // neck droplet can animate at a fixed rate of one drip per second
+    // regardless of the ripple's own timing.
+    _dropController = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       final newDateKey = todayKey();
@@ -53,6 +58,7 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
   @override
   void dispose() {
     _flowController.dispose();
+    _dropController.dispose();
     _timer?.cancel();
     super.dispose();
   }
@@ -70,9 +76,13 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
             height: 160,
             width: 120,
             child: AnimatedBuilder(
-              animation: _flowController,
+              animation: Listenable.merge([_flowController, _dropController]),
               builder: (context, _) => CustomPaint(
-                painter: _HourglassPainter(progress: _progress, flowPhase: _flowController.value),
+                painter: _HourglassPainter(
+                  progress: _progress,
+                  flowPhase: _flowController.value,
+                  dropPhase: _dropController.value,
+                ),
               ),
             ),
           ),
@@ -87,7 +97,8 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
 class _HourglassPainter extends CustomPainter {
   final double progress;
   final double flowPhase;
-  _HourglassPainter({required this.progress, required this.flowPhase});
+  final double dropPhase;
+  _HourglassPainter({required this.progress, required this.flowPhase, required this.dropPhase});
 
   static const double top = 12, neck = 80, bottom = 148, left = 15, right = 105;
 
@@ -152,8 +163,11 @@ class _HourglassPainter extends CustomPainter {
         ..color = const Color(0xFF38BDF8)
         ..strokeWidth = 2.5
         ..strokeCap = StrokeCap.round;
-      const dashLen = 4.0, gapLen = 4.0;
-      var y = streamTop - flowPhase * (dashLen + gapLen);
+      // gapLen is at least the longest the stream ever gets (bulbHeight * 2)
+      // so only a single droplet is ever visible at once.
+      const dashLen = 4.0;
+      final gapLen = bulbHeight * 2;
+      var y = streamTop - dropPhase * (dashLen + gapLen);
       while (y < streamBottom) {
         final segStart = y.clamp(streamTop, streamBottom);
         final segEnd = (y + dashLen).clamp(streamTop, streamBottom);
@@ -185,7 +199,7 @@ class _HourglassPainter extends CustomPainter {
   // Builds a wavy horizontal strip closed far below `y` so it reads as a
   // water body with a rippling surface once clipped to the bulb triangle.
   Path _wavePath(double y, double xStart, double xEnd, double phase) {
-    const amplitude = 2.5;
+    const amplitude = 1.2;
     const wavelength = 18.0;
     final offset = phase * wavelength;
     var x = xStart - wavelength + (offset % wavelength);
@@ -206,5 +220,7 @@ class _HourglassPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HourglassPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.flowPhase != flowPhase;
+      oldDelegate.progress != progress ||
+      oldDelegate.flowPhase != flowPhase ||
+      oldDelegate.dropPhase != dropPhase;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../greeting.dart';
 import '../theme.dart';
 import 'daily_page.dart';
 import 'dates_page.dart';
@@ -18,6 +19,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.appState.userName.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) promptForName(context, widget.appState);
+      });
+    }
+  }
 
   Future<void> _logout() async {
     await widget.appState.logout();

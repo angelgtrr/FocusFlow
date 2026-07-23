@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../date_utils.dart';
+import '../greeting.dart';
 import '../models.dart';
 import '../stats.dart';
 import '../theme.dart';
@@ -60,6 +61,7 @@ class _DailyPageState extends State<DailyPage> {
     return ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
+          GreetingHeader(appState: appState),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

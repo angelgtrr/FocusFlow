@@ -28,7 +28,7 @@ function formatRemaining(progress: number): string {
 // Builds a wavy horizontal strip closed far below `y` so it reads as a
 // water body with a rippling surface once clipped to the bulb triangle.
 function wavePath(y: number, xStart: number, xEnd: number, phase: number): string {
-  const amplitude = 2.5;
+  const amplitude = 1.2;
   const wavelength = 18;
   const offset = phase * wavelength;
   let x = xStart - wavelength + (offset % wavelength);
@@ -138,7 +138,7 @@ export default function HourglassProgress({ onDayRollover }: HourglassProgressPr
             stroke="#38bdf8"
             strokeWidth="2.5"
             strokeLinecap="round"
-            strokeDasharray="4 4"
+            strokeDasharray="4 70"
             className="hourglass-stream"
           />
         )}

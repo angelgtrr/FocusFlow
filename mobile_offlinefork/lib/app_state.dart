@@ -15,6 +15,7 @@ class AppState extends ChangeNotifier {
 
   bool initializing = true;
   String? error;
+  String userName = '';
 
   List<Dimension> dimensions = [];
   List<Task> tasks = [];
@@ -46,6 +47,14 @@ class AppState extends ChangeNotifier {
     taskCompletions = (await localDb.getAll(LocalDb.taskCompletion)).map(TaskCompletion.fromJson).toList();
     dayNotes = (await localDb.getAll(LocalDb.dayNote)).map(DayNote.fromJson).toList();
     dates = (await localDb.getAll(LocalDb.savedDate)).map(SavedDate.fromJson).toList();
+    final settingsRows = await localDb.getAll(LocalDb.settings);
+    userName = settingsRows.isEmpty ? '' : (settingsRows.first['name'] as String? ?? '');
+  }
+
+  Future<void> setUserName(String name) async {
+    userName = name;
+    await localDb.put(LocalDb.settings, 'profile', {'name': name});
+    notifyListeners();
   }
 
   /// Re-reads everything from disk — used on app resume, and after a backup

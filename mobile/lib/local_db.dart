@@ -23,6 +23,7 @@ class LocalDb {
   static const taskCompletion = 'task_completion';
   static const dayNote = 'day_note';
   static const savedDate = 'saved_date';
+  static const settings = 'settings';
 
   Database? _db;
 
