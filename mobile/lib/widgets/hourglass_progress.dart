@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../date_utils.dart';
+import '../hourglass.dart';
 import '../theme.dart';
 
 /// Hourglass that visualizes the day's progress from midnight to midnight,
@@ -29,7 +30,7 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _progress = _computeProgress();
+    _progress = hourglassDayProgress();
     _dateKey = todayKey();
     _flowController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -40,11 +41,11 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
         setState(() {
           _dateKey = newDateKey;
           _turns += 0.5;
-          _progress = _computeProgress();
+          _progress = hourglassDayProgress();
         });
         widget.onDayRollover?.call(previousDateKey, newDateKey);
       } else {
-        setState(() => _progress = _computeProgress());
+        setState(() => _progress = hourglassDayProgress());
       }
     });
   }
@@ -54,23 +55,6 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
     _flowController.dispose();
     _timer?.cancel();
     super.dispose();
-  }
-
-  static double _computeProgress() {
-    final now = DateTime.now();
-    final minutes = now.hour * 60 + now.minute + now.second / 60;
-    const dayMinutes = 24 * 60;
-    return (minutes / dayMinutes).clamp(0.0, 1.0);
-  }
-
-  static String _formatRemaining(double progress) {
-    if (progress >= 1) return 'Day complete';
-    final now = DateTime.now();
-    final endOfDay = DateTime(now.year, now.month, now.day + 1);
-    final diff = endOfDay.difference(now);
-    final h = diff.inHours;
-    final m = diff.inMinutes % 60;
-    return '${h}h ${m}m left today';
   }
 
   @override
@@ -94,7 +78,7 @@ class _HourglassProgressState extends State<HourglassProgress> with SingleTicker
           ),
         ),
         const SizedBox(height: 6),
-        Text(_formatRemaining(_progress), style: const TextStyle(color: AppColors.slate400, fontSize: 12)),
+        Text(hourglassRemainingLabel(_progress), style: const TextStyle(color: AppColors.slate400, fontSize: 12)),
       ],
     );
   }

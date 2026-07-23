@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'date_utils.dart';
+import 'hourglass.dart';
 import 'models.dart';
 import 'stats.dart';
 
@@ -37,10 +38,13 @@ Future<void> showProgressNotification({
 }) async {
   final body = '$dimensionsLogged/$totalDimensions dimensions · $currentScore/$maxScore points today';
 
+  final dayProgress = hourglassDayProgress();
+
   final androidDetails = AndroidNotificationDetails(
     _channelId,
     'Daily progress',
     channelDescription: "Shows today's FocusFlow progress",
+    icon: hourglassIconName(dayProgress),
     importance: Importance.low,
     priority: Priority.low,
     ongoing: true,
@@ -49,6 +53,7 @@ Future<void> showProgressNotification({
     showWhen: false,
     styleInformation: BigTextStyleInformation(
       [
+        hourglassRemainingLabel(dayProgress),
         if (doneDimensions.isNotEmpty) 'Done: ${doneDimensions.join(', ')}',
         if (missingDimensions.isNotEmpty) 'Pending: ${missingDimensions.join(', ')}',
       ].join('\n'),
